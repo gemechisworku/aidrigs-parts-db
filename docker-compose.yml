@@ -1,0 +1,90 @@
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: aidrigs-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: aidrigs
+      POSTGRES_PASSWORD: aidrigs_dev_password
+      POSTGRES_DB: aidrigs_parts_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - aidrigs-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aidrigs"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aidrigs-backend
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      DATABASE_URL: postgresql://aidrigs:aidrigs_dev_password@db:5432/aidrigs_parts_db
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - aidrigs-network
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: aidrigs-frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:8000
+    ports:
+      - "3001:5173"  # Changed external port to 3001 to avoid Windows permission issues
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - aidrigs-network
+
+  # pgAdmin for database visualization
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: aidrigs-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@aidrigs.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - db
+    networks:
+      - aidrigs-network
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+
+networks:
+  aidrigs-network:
+    driver: bridge
+
