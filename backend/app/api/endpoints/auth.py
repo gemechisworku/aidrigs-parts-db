@@ -2,7 +2,7 @@
 Authentication endpoints for user registration, login, and token management
 """
 from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -19,6 +19,10 @@ from app.core.config import settings
 from app.models.user import User
 from app.schemas.auth import UserLogin, UserRegister, Token, PasswordChange
 from app.schemas.user import UserResponse, UserWithRoles
+from app.core.audit import log_audit
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -69,7 +73,11 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+async def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+    request: Request = None
+):
     """
     Login with email/username and password to get JWT token
     

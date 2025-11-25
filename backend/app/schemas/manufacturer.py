@@ -1,23 +1,32 @@
 from typing import Optional, Dict, Any
-from pydantic import BaseModel, UUID4, EmailStr, HttpUrl
+from pydantic import BaseModel, UUID4
+from datetime import datetime
 
 class ManufacturerBase(BaseModel):
-    name: str
-    code: Optional[str] = None
+    mfg_id: str
+    mfg_name: str
+    mfg_type: str  # OEM, APM, Remanufacturers
     country: Optional[str] = None
-    website: Optional[HttpUrl] = None
-    is_active: bool = True
+    website: Optional[str] = None
     contact_info: Optional[Dict[str, Any]] = None
+    certification: Optional[str] = None
 
 class ManufacturerCreate(ManufacturerBase):
     pass
 
-class ManufacturerUpdate(ManufacturerBase):
-    name: Optional[str] = None
-    is_active: Optional[bool] = None
+class ManufacturerUpdate(BaseModel):
+    mfg_id: Optional[str] = None
+    mfg_name: Optional[str] = None
+    mfg_type: Optional[str] = None
+    country: Optional[str] = None
+    website: Optional[str] = None
+    contact_info: Optional[Dict[str, Any]] = None
+    certification: Optional[str] = None
 
 class ManufacturerResponse(ManufacturerBase):
     id: UUID4
+    created_at: datetime
+    updated_at: datetime
     
     class Config:
         from_attributes = True

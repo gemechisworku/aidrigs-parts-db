@@ -1,8 +1,8 @@
 import apiClient from './api';
-import { Category, Manufacturer, Part, PartFilters } from '../types/parts';
+import { Category, Manufacturer, Part, PartCreate, PartFilters, PartListResponse, Position } from '../types/parts';
 
 // Re-export types for convenience
-export type { Category, Manufacturer, Part, PartFilters };
+export type { Category, Manufacturer, Part, PartFilters, Position };
 
 export const partsAPI = {
     // Categories
@@ -27,16 +27,23 @@ export const partsAPI = {
         return response.data;
     },
 
-    // Parts
+    // Positions
+    getPositions: async () => {
+        const response = await apiClient.get<Position[]>('/positions/');
+        return response.data;
+    },
+
+    // Parts with pagination
     getParts: async (filters: PartFilters = {}) => {
         const params = new URLSearchParams();
         if (filters.search) params.append('search', filters.search);
-        if (filters.category_id) params.append('category_id', filters.category_id);
-        if (filters.manufacturer_id) params.append('manufacturer_id', filters.manufacturer_id);
-        if (filters.page) params.append('skip', ((filters.page - 1) * (filters.size || 10)).toString());
-        if (filters.size) params.append('limit', filters.size.toString());
+        if (filters.mfg_id) params.append('mfg_id', filters.mfg_id);
+        if (filters.part_name_en) params.append('part_name_en', filters.part_name_en);
+        if (filters.drive_side) params.append('drive_side', filters.drive_side);
+        if (filters.page) params.append('page', filters.page.toString());
+        if (filters.page_size) params.append('page_size', filters.page_size.toString());
 
-        const response = await apiClient.get<Part[]>('/parts/', { params });
+        const response = await apiClient.get<PartListResponse>('/parts/', { params });
         return response.data;
     },
 
@@ -45,18 +52,18 @@ export const partsAPI = {
         return response.data;
     },
 
-    createPart: async (data: Partial<Part>) => {
+    createPart: async (data: PartCreate) => {
         const response = await apiClient.post<Part>('/parts/', data);
         return response.data;
     },
 
-    updatePart: async (id: string, data: Partial<Part>) => {
+    updatePart: async (id: string, data: Partial<PartCreate>) => {
         const response = await apiClient.put<Part>(`/parts/${id}`, data);
         return response.data;
     },
 
     deletePart: async (id: string) => {
-        const response = await apiClient.delete<Part>(`/parts/${id}`);
+        const response = await apiClient.delete<{ message: string; part_id: string }>(`/parts/${id}`);
         return response.data;
     },
 };

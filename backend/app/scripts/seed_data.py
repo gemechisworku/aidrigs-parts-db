@@ -211,6 +211,33 @@ def seed_hs_codes(db: Session):
     print(f"Created {len(hs_codes_data)} HS codes")
 
 
+def seed_positions(db: Session):
+    """Create sample position translations"""
+    from app.models.translation import PositionTranslation
+    
+    positions_data = [
+        {"position_id": "FL", "position_en": "Front Left", "position_pr": "Frente Esquerda", "position_fr": "Avant Gauche"},
+        {"position_id": "FR", "position_en": "Front Right", "position_pr": "Frente Direita", "position_fr": "Avant Droit"},
+        {"position_id": "RL", "position_en": "Rear Left", "position_pr": "Traseira Esquerda", "position_fr": "Arrière Gauche"},
+        {"position_id": "RR", "position_en": "Rear Right", "position_pr": "Traseira Direita", "position_fr": "Arrière Droit"},
+        {"position_id": "FC", "position_en": "Front Center", "position_pr": "Frente Central", "position_fr": "Avant Centre"},
+        {"position_id": "RC", "position_en": "Rear Center", "position_pr": "Traseira Central", "position_fr": "Arrière Centre"},
+        {"position_id": "UNI", "position_en": "Universal", "position_pr": "Universal", "position_fr": "Universel"},
+        {"position_id": "ENG", "position_en": "Engine", "position_pr": "Motor", "position_fr": "Moteur"},
+    ]
+    
+    for pos_data in positions_data:
+        existing = db.query(PositionTranslation).filter(
+            PositionTranslation.position_id == pos_data["position_id"]
+        ).first()
+        if not existing:
+            position = PositionTranslation(**pos_data)
+            db.add(position)
+    
+    db.commit()
+    print(f"Created {len(positions_data)} positions")
+
+
 
 def seed_all():
     """Run all seed functions"""
@@ -223,6 +250,7 @@ def seed_all():
         seed_categories(db)
         seed_manufacturers(db)
         seed_hs_codes(db)
+        seed_positions(db)
         print("Database seeding completed successfully!")
     except Exception as e:
         print(f"Error during seeding: {e}")

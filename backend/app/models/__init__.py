@@ -12,7 +12,7 @@ from app.models.vehicle import Vehicle, VehicleEquivalence, VehiclePartCompatibi
 from app.models.supplier import Supplier, SupplierPart, PricingRule
 from app.models.quote import Quote, QuoteItem
 from app.models.purchasing import PurchaseOrder, Port, Shipment, GRNItem
-from app.models.workflow import Approval, ApprovalWorkflow, AuditLog, Inventory
+from app.models.workflow import Approval, ApprovalWorkflow, Inventory, AuditLog
 
 __all__ = [
     # Base

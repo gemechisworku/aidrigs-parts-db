@@ -1,39 +1,93 @@
-from typing import Optional, Dict, Any, List
+from typing import Optional, List
 from pydantic import BaseModel, UUID4, Field
+from datetime import datetime
 from decimal import Decimal
-from app.schemas.category import CategoryResponse
-from app.schemas.manufacturer import ManufacturerResponse
 
-class PartBase(BaseModel):
-    part_number: str
-    name: str
-    description: Optional[str] = None
-    category_id: Optional[UUID4] = None
-    manufacturer_id: Optional[UUID4] = None
-    weight_kg: Optional[Decimal] = None
-    dimensions_cm: Optional[Dict[str, Decimal]] = None
-    is_active: bool = True
-    specifications: Optional[Dict[str, Any]] = None
-
-class PartCreate(PartBase):
-    part_number: str = Field(..., min_length=1)
-    name: str = Field(..., min_length=1)
-
-class PartUpdate(PartBase):
-    part_number: Optional[str] = None
-    name: Optional[str] = None
-    is_active: Optional[bool] = None
-
-class PartResponse(PartBase):
+# Nested response models for relationships
+class ManufacturerNested(BaseModel):
     id: UUID4
-    category: Optional[CategoryResponse] = None
-    manufacturer: Optional[ManufacturerResponse] = None
+    mfg_id: str
+    mfg_name: str
     
     class Config:
         from_attributes = True
 
-class PartList(BaseModel):
+class PartTranslationNested(BaseModel):
+    part_name_en: str
+    part_name_pr: Optional[str] = None
+    part_name_fr: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+class PositionNested(BaseModel):
+    id: UUID4
+    position_id: str
+    position_en: str
+    
+    class Config:
+        from_attributes = True
+
+# Base schema with common fields
+class PartBase(BaseModel):
+    part_id: str = Field(..., max_length=12, description="Unique part identifier")
+    mfg_id: Optional[UUID4] = None
+    part_name_en: Optional[str] = Field(None, max_length=60)
+    position_id: Optional[UUID4] = None
+    drive_side: str = Field(default="NA", pattern="^(NA|LHD|RHD)$")
+    designation: Optional[str] = Field(None, max_length=255)
+    moq: Optional[int] = Field(None, ge=0, description="Minimum order quantity")
+    weight: Optional[Decimal] = Field(None, ge=0)
+    width: Optional[Decimal] = Field(None, ge=0)
+    length: Optional[Decimal] = Field(None, ge=0)
+    height: Optional[Decimal] = Field(None, ge=0)
+    note: Optional[str] = None
+    image_url: Optional[str] = None
+
+class PartCreate(PartBase):
+    """Schema for creating a new part"""
+    pass
+
+class PartUpdate(BaseModel):
+    """Schema for updating a part - all fields optional except part_id cannot be changed"""
+    mfg_id: Optional[UUID4] = None
+    part_name_en: Optional[str] = Field(None, max_length=60)
+    position_id: Optional[UUID4] = None
+    drive_side: Optional[str] = Field(None, pattern="^(NA|LHD|RHD)$")
+    designation: Optional[str] = Field(None, max_length=255)
+    moq: Optional[int] = Field(None, ge=0)
+    weight: Optional[Decimal] = Field(None, ge=0)
+    width: Optional[Decimal] = Field(None, ge=0)
+    length: Optional[Decimal] = Field(None, ge=0)
+    height: Optional[Decimal] = Field(None, ge=0)
+    note: Optional[str] = None
+    image_url: Optional[str] = None
+
+class PartResponse(PartBase):
+    """Schema for part response with relationships"""
+    id: UUID4
+    created_at: datetime
+    updated_at: datetime
+    manufacturer: Optional[ManufacturerNested] = None
+    part_translation: Optional[PartTranslationNested] = None
+    position: Optional[PositionNested] = None
+    
+    class Config:
+        from_attributes = True
+
+class PartListResponse(BaseModel):
+    """Paginated list response"""
     items: List[PartResponse]
     total: int
     page: int
-    size: int
+    pages: int
+    page_size: int
+
+class PartFilter(BaseModel):
+    """Filters for parts list"""
+    search: Optional[str] = None  # Search in part_id or designation
+    mfg_id: Optional[UUID4] = None
+    part_name_en: Optional[str] = None
+    drive_side: Optional[str] = None
+    page: int = 1
+    page_size: int = 20

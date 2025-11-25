@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     # Application Settings
     PROJECT_NAME: str = "AidRigs Parts Database"
     DEBUG: bool = True
+    ENVIRONMENT: str = "development"
+    LOG_LEVEL: str = "INFO"
     
     model_config = SettingsConfigDict(
         env_file=".env",

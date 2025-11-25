@@ -17,7 +17,7 @@ class PartTranslationStandardization(BaseModel):
     part_name_fr = Column(String(60))
     hs_code = Column(String(14), ForeignKey("hs_codes.hs_code"))
     category_en = Column(String(60), ForeignKey("categories.category_name_en"))
-    drive_side_specific = Column(Enum('yes', 'no', name='drive_side_enum'), default='no')
+    drive_side_specific = Column(Enum('yes', 'no', name='drive_side_specific_enum'), default='no')
     alternative_names = Column(String(255))  # Comma-separated or JSON
     links = Column(Text)
     

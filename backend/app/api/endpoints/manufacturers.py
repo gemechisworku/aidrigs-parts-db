@@ -16,7 +16,7 @@ def read_manufacturers(
     """
     Retrieve manufacturers.
     """
-    manufacturers = db.query(Manufacturer).offset(skip).limit(limit).all()
+    manufacturers = db.query(Manufacturer).filter(Manufacturer.deleted_at.is_(None)).offset(skip).limit(limit).all()
     return manufacturers
 
 @router.post("/", response_model=ManufacturerResponse)
@@ -29,14 +29,15 @@ def create_manufacturer(
     """
     Create new manufacturer.
     """
-    manufacturer = Manufacturer(
-        name=manufacturer_in.name,
-        code=manufacturer_in.code,
-        country=manufacturer_in.country,
-        website=str(manufacturer_in.website) if manufacturer_in.website else None,
-        is_active=manufacturer_in.is_active,
-        contact_info=manufacturer_in.contact_info,
-    )
+    # Check if mfg_id already exists
+    existing = db.query(Manufacturer).filter(Manufacturer.mfg_id == manufacturer_in.mfg_id).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Manufacturer with mfg_id '{manufacturer_in.mfg_id}' already exists",
+        )
+    
+    manufacturer = Manufacturer(**manufacturer_in.model_dump())
     db.add(manufacturer)
     db.commit()
     db.refresh(manufacturer)
@@ -54,7 +55,7 @@ def update_manufacturer(
     Update a manufacturer.
     """
     manufacturer = db.query(Manufacturer).filter(Manufacturer.id == manufacturer_id).first()
-    if not manufacturer:
+    if not manufacturer or manufacturer.deleted_at is not None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Manufacturer not found",
@@ -62,8 +63,6 @@ def update_manufacturer(
     
     update_data = manufacturer_in.model_dump(exclude_unset=True)
     for field, value in update_data.items():
-        if field == 'website' and value:
-            value = str(value)
         setattr(manufacturer, field, value)
         
     db.add(manufacturer)
