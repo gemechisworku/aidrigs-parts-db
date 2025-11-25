@@ -1,23 +1,14 @@
 """
-API Router configuration
-Includes all API endpoints grouped by version and domain
+API router configuration
 """
 from fastapi import APIRouter
-from app.api.endpoints import auth
+from app.api.endpoints import auth, parts, categories, manufacturers, translations
 
-# API v1 router
 api_router = APIRouter()
 
-# Include auth endpoints
+# Include endpoint routers
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-
-# Root API endpoint
-@api_router.get("/")
-async def api_root():
-    """API root endpoint"""
-    return {
-        "message": "AidRigs Parts Database API",
-        "version": "1.0.0",
-        "docs": "/docs",
-        "status": "operational"
-    }
+api_router.include_router(parts.router, prefix="/parts", tags=["Parts"])
+api_router.include_router(categories.router, prefix="/categories", tags=["Categories"])
+api_router.include_router(manufacturers.router, prefix="/manufacturers", tags=["Manufacturers"])
+api_router.include_router(translations.router, prefix="/translations", tags=["Translations"])

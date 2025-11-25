@@ -1,1 +1,3 @@
-# API module
+"""
+API package
+"""

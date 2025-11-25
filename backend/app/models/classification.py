@@ -1,7 +1,7 @@
 """
 HS Code and category models
 """
-from sqlalchemy import Column, String, Text
+from sqlalchemy import Column, String, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from app.models.base import BaseModel
 
@@ -29,7 +29,7 @@ class HSCodeTariff(BaseModel):
     
     __tablename__ = "hs_code_tariff"
     
-    hs_code = Column(String(14), nullable=False, index=True)
+    hs_code = Column(String(14), ForeignKey("hs_codes.hs_code"), nullable=False, index=True)
     country_name = Column(String(60), nullable=False)
     tariff_rate = Column(String(20))  # Can be percentage or formula
     last_updated = Column(String(20))

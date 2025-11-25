@@ -15,7 +15,7 @@ class Role(BaseModel):
     
     name = Column(String(100), unique=True, nullable=False, index=True)
     description = Column(Text)
-    is_system = Column(Boolean, default=False, nullable=False)  # System roles cannot be deleted
+    is_system = Column(Boolean, default=False, nullable=False)
     
     # Relationships
     users = relationship("UserRole", back_populates="role", cascade="all, delete-orphan")
@@ -33,8 +33,8 @@ class Permission(BaseModel):
         UniqueConstraint('resource', 'action', name='uix_resource_action'),
     )
     
-    resource = Column(String(100), nullable=False, index=True)  # e.g., 'parts', 'quotes', 'users'
-    action = Column(String(50), nullable=False, index=True)  # e.g., 'create', 'read', 'update', 'delete'
+    resource = Column(String(100), nullable=False, index=True)
+    action = Column(String(50), nullable=False, index=True)
     description = Column(Text)
     
     # Relationships
@@ -55,9 +55,8 @@ class UserRole(Base, TimestampMixin):
     assigned_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     
     # Relationships
-    user = relationship("User", back_populates="roles", foreign_keys=[user_id])
+    user = relationship("User", back_populates="user_roles", foreign_keys=[user_id])
     role = relationship("Role", back_populates="users", foreign_keys=[role_id])
-    assigner = relationship("User", foreign_keys=[assigned_by])
     
     def __repr__(self):
         return f"<UserRole(user_id={self.user_id}, role_id={self.role_id})>"

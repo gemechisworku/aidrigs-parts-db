@@ -1,0 +1,540 @@
+/**
+ * Parts Translation Page
+ * Manage multilingual translations for parts with manual entry and CSV bulk upload
+ */
+import { useState, useEffect } from 'react';
+import { translationAPI, Translation, BulkUploadResponse } from '../../services/translationApi';
+import { partsAPI, Category } from '../../services/partsApi';
+
+const PartsTranslation = () => {
+    const [translations, setTranslations] = useState<Translation[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [search, setSearch] = useState('');
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [total, setTotal] = useState(0);
+
+    // Modal states
+    const [showFormModal, setShowFormModal] = useState(false);
+    const [showUploadModal, setShowUploadModal] = useState(false);
+    const [editingTranslation, setEditingTranslation] = useState<Translation | null>(null);
+
+    // Form state
+    const [formData, setFormData] = useState({
+        part_name_en: '',
+        part_name_pr: '',
+        part_name_fr: '',
+        hs_code: '',
+        category_en: '',
+        drive_side_specific: 'no' as 'yes' | 'no',
+        alternative_names: '',
+        links: '',
+    });
+
+    // CSV Upload state
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [uploadResult, setUploadResult] = useState<BulkUploadResponse | null>(null);
+    const [uploading, setUploading] = useState(false);
+
+    useEffect(() => {
+        loadTranslations();
+        loadCategories();
+    }, [page, search]);
+
+    const loadCategories = async () => {
+        try {
+            const response = await partsAPI.getCategories();
+            setCategories(response);
+        } catch (error) {
+            console.error('Error loading categories:', error);
+        }
+    };
+
+    const loadTranslations = async () => {
+        setLoading(true);
+        try {
+            const response = await translationAPI.getTranslations({
+                search,
+                page,
+                page_size: 20,
+            });
+            setTranslations(response.items);
+            setTotal(response.total);
+            setTotalPages(response.pages);
+        } catch (error) {
+            console.error('Error loading translations:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            // Clean up empty fields
+            const cleanData: any = { part_name_en: formData.part_name_en };
+            if (formData.part_name_pr) cleanData.part_name_pr = formData.part_name_pr;
+            if (formData.part_name_fr) cleanData.part_name_fr = formData.part_name_fr;
+            if (formData.hs_code) cleanData.hs_code = formData.hs_code;
+            if (formData.category_en) cleanData.category_en = formData.category_en;
+            if (formData.alternative_names) cleanData.alternative_names = formData.alternative_names;
+            if (formData.links) cleanData.links = formData.links;
+            cleanData.drive_side_specific = formData.drive_side_specific;
+
+            if (editingTranslation) {
+                await translationAPI.updateTranslation(editingTranslation.id, cleanData);
+            } else {
+                await translationAPI.createTranslation(cleanData);
+            }
+            setShowFormModal(false);
+            resetForm();
+            loadTranslations();
+        } catch (error: any) {
+            alert(error.response?.data?.detail || 'Error saving translation');
+        }
+    };
+
+    const resetForm = () => {
+        setFormData({
+            part_name_en: '',
+            part_name_pr: '',
+            part_name_fr: '',
+            hs_code: '',
+            category_en: '',
+            drive_side_specific: 'no',
+            alternative_names: '',
+            links: '',
+        });
+        setEditingTranslation(null);
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this translation?')) return;
+        try {
+            await translationAPI.deleteTranslation(id);
+            loadTranslations();
+        } catch (error) {
+            alert('Error deleting translation');
+        }
+    };
+
+    const handleEdit = (translation: Translation) => {
+        setEditingTranslation(translation);
+        setFormData({
+            part_name_en: translation.part_name_en,
+            part_name_pr: translation.part_name_pr || '',
+            part_name_fr: translation.part_name_fr || '',
+            hs_code: translation.hs_code || '',
+            category_en: translation.category_en || '',
+            drive_side_specific: translation.drive_side_specific || 'no',
+            alternative_names: translation.alternative_names || '',
+            links: translation.links || '',
+        });
+        setShowFormModal(true);
+    };
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setSelectedFile(e.target.files[0]);
+            setUploadResult(null);
+        }
+    };
+
+    const handleCSVUpload = async () => {
+        if (!selectedFile) return;
+        setUploading(true);
+        try {
+            const result = await translationAPI.bulkUpload(selectedFile);
+            setUploadResult(result);
+            if (result.success_count > 0) {
+                loadTranslations();
+            }
+        } catch (error: any) {
+            alert(error.response?.data?.detail || 'Error uploading CSV');
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleDownloadTemplate = async () => {
+        try {
+            const blob = await translationAPI.downloadTemplate();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'translation_template.csv';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            alert('Error downloading template');
+        }
+    };
+
+    return (
+        <div className="p-8">
+            <div className="max-w-7xl mx-auto">
+                {/* Header */}
+                <div className="mb-8 flex justify-between items-center">
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">Parts Translation</h1>
+                        <p className="text-gray-600">Manage multilingual part names (EN, PT, FR)</p>
+                    </div>
+                    <div className="flex space-x-3">
+                        <button
+                            onClick={() => setShowUploadModal(true)}
+                            className="btn-secondary"
+                        >
+                            📤 CSV Upload
+                        </button>
+                        <button
+                            onClick={() => {
+                                resetForm();
+                                setShowFormModal(true);
+                            }}
+                            className="btn-primary"
+                        >
+                            + Add Translation
+                        </button>
+                    </div>
+                </div>
+
+                {/* Search & Filters */}
+                <div className="card mb-6">
+                    <div className="flex items-center space-x-4">
+                        <div className="flex-1">
+                            <input
+                                type="text"
+                                placeholder="Search translations..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="input"
+                            />
+                        </div>
+                        <div className="text-sm text-gray-600">
+                            {total} total translations
+                        </div>
+                    </div>
+                </div>
+
+                {/* Translations Table */}
+                <div className="card overflow-hidden">
+                    {loading ? (
+                        <div className="text-center py-12">
+                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+                        </div>
+                    ) : translations.length === 0 ? (
+                        <div className="text-center py-12 text-gray-500">
+                            No translations found. Add your first translation or upload a CSV file.
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">English</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Portuguese</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">French</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">HS Code</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Drive Side</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {translations.map((translation) => (
+                                        <tr key={translation.id} className="hover:bg-gray-50">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                {translation.part_name_en}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                {translation.part_name_pr || '-'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                {translation.part_name_fr || '-'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                {translation.category_en || '-'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                {translation.hs_code || '-'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                <span className={`px-2 py-1 text-xs rounded ${translation.drive_side_specific === 'yes' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}`}>
+                                                    {translation.drive_side_specific || 'no'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                                                <button
+                                                    onClick={() => handleEdit(translation)}
+                                                    className="text-blue-600 hover:text-blue-900"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(translation.id)}
+                                                    className="text-red-600 hover:text-red-900"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="px-6 py-4 flex justify-between items-center border-t">
+                            <button
+                                onClick={() => setPage(Math.max(1, page - 1))}
+                                disabled={page === 1}
+                                className="btn-outline disabled:opacity-50"
+                            >
+                                Previous
+                            </button>
+                            <span className="text-sm text-gray-600">
+                                Page {page} of {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setPage(Math.min(totalPages, page + 1))}
+                                disabled={page === totalPages}
+                                className="btn-outline disabled:opacity-50"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Form Modal */}
+            {showFormModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                        <h2 className="text-2xl font-bold mb-4">
+                            {editingTranslation ? 'Edit Translation' : 'Add Translation'}
+                        </h2>
+                        <form onSubmit={handleSubmit}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Part Names */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        English Name * (Primary Key)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.part_name_en}
+                                        onChange={(e) => setFormData({ ...formData, part_name_en: e.target.value })}
+                                        required
+                                        disabled={!!editingTranslation}
+                                        className="input disabled:bg-gray-100"
+                                        maxLength={60}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Portuguese Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.part_name_pr}
+                                        onChange={(e) => setFormData({ ...formData, part_name_pr: e.target.value })}
+                                        className="input"
+                                        maxLength={60}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        French Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.part_name_fr}
+                                        onChange={(e) => setFormData({ ...formData, part_name_fr: e.target.value })}
+                                        className="input"
+                                        maxLength={60}
+                                    />
+                                </div>
+
+                                {/* Category */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Category
+                                    </label>
+                                    <select
+                                        value={formData.category_en}
+                                        onChange={(e) => setFormData({ ...formData, category_en: e.target.value })}
+                                        className="input"
+                                    >
+                                        <option value="">-- Select Category --</option>
+                                        {categories.map((cat) => (
+                                            <option key={cat.id} value={cat.category_name_en}>
+                                                {cat.category_name_en}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* HS Code */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        HS Code
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.hs_code}
+                                        onChange={(e) => setFormData({ ...formData, hs_code: e.target.value })}
+                                        className="input"
+                                        maxLength={14}
+                                        placeholder="e.g., 8421.23.00"
+                                    />
+                                </div>
+
+                                {/* Drive Side Specific */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Drive Side Specific
+                                    </label>
+                                    <select
+                                        value={formData.drive_side_specific}
+                                        onChange={(e) => setFormData({ ...formData, drive_side_specific: e.target.value as 'yes' | 'no' })}
+                                        className="input"
+                                    >
+                                        <option value="no">No</option>
+                                        <option value="yes">Yes</option>
+                                    </select>
+                                </div>
+
+                                {/* Alternative Names */}
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Alternative Names (comma-separated)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.alternative_names}
+                                        onChange={(e) => setFormData({ ...formData, alternative_names: e.target.value })}
+                                        className="input"
+                                        maxLength={60}
+                                        placeholder="e.g., Oil Strainer, Filter Element"
+                                    />
+                                </div>
+
+                                {/* Links */}
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Links (related URLs)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.links}
+                                        onChange={(e) => setFormData({ ...formData, links: e.target.value })}
+                                        className="input"
+                                        maxLength={1024}
+                                        placeholder="https://example.com/part-info"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex justify-end space-x-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowFormModal(false)}
+                                    className="btn-outline"
+                                >
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn-primary">
+                                    {editingTranslation ? 'Update' : 'Create'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* CSV Upload Modal */}
+            {showUploadModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                        <h2 className="text-2xl font-bold mb-4">Bulk Upload Translations</h2>
+
+                        <div className="mb-4">
+                            <button
+                                onClick={handleDownloadTemplate}
+                                className="text-blue-600 hover:text-blue-800 text-sm"
+                            >
+                                📥 Download CSV Template
+                            </button>
+                            <p className="text-xs text-gray-500 mt-1">
+                                Format: part_name_en,part_name_pr,part_name_fr,hs_code,category_en,drive_side_specific,alternative_names,links
+                            </p>
+                        </div>
+
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 mb-4">
+                            <input
+                                type="file"
+                                accept=".csv"
+                                onChange={handleFileSelect}
+                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"
+                            />
+                            {selectedFile && (
+                                <p className="mt-2 text-sm text-gray-600">
+                                    Selected: {selectedFile.name}
+                                </p>
+                            )}
+                        </div>
+
+                        {uploadResult && (
+                            <div className={`p-4 rounded-lg mb-4 ${uploadResult.error_count > 0 ? 'bg-yellow-50 border border-yellow-200' : 'bg-green-50 border border-green-200'}`}>
+                                <h3 className="font-medium mb-2">Upload Results:</h3>
+                                <p className="text-sm">✅ Success: {uploadResult.success_count}</p>
+                                <p className="text-sm">❌ Errors: {uploadResult.error_count}</p>
+
+                                {uploadResult.errors.length > 0 && (
+                                    <div className="mt-3">
+                                        <p className="font-medium text-sm mb-1">Errors:</p>
+                                        <div className="max-h-40 overflow-y-auto text-xs bg-white p-2 rounded">
+                                            {uploadResult.errors.map((err, idx) => (
+                                                <div key={idx} className="mb-1 font-mono">
+                                                    Row {err.row}: {err.error}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                onClick={() => {
+                                    setShowUploadModal(false);
+                                    setSelectedFile(null);
+                                    setUploadResult(null);
+                                }}
+                                className="btn-outline"
+                            >
+                                Close
+                            </button>
+                            <button
+                                onClick={handleCSVUpload}
+                                disabled={!selectedFile || uploading}
+                                className="btn-primary disabled:opacity-50"
+                            >
+                                {uploading ? 'Uploading...' : 'Upload'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default PartsTranslation;

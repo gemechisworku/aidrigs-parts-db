@@ -8,8 +8,9 @@ export default defineConfig({
         port: 3000, // Changed from 5173 to avoid Windows permission issues
         proxy: {
             '/api': {
-                target: 'http://localhost:8000',
+                target: 'http://localhost:8000',  // Connect to Docker backend on localhost
                 changeOrigin: true,
+                secure: false,
             },
         },
     },

@@ -4,7 +4,7 @@ Seed data script for initial database setup
 import asyncio
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal, engine
-from app.models import Role, Permission, RolePermission, User, Category
+from app.models import Role, Permission, RolePermission, User, Category, Manufacturer
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -121,6 +121,97 @@ def seed_categories(db: Session):
     print(f"Created {len(categories_data)} categories")
 
 
+def seed_manufacturers(db: Session):
+    """Create sample manufacturers"""
+    from app.models import Manufacturer
+    
+    manufacturers_data = [
+        {
+            "mfg_id": "TOYOTA",
+            "mfg_name": "Toyota",
+            "mfg_type": "OEM",
+            "country": "Japan",
+            "website": "toyota.com",
+            "contact_info": {"email": "parts@toyota.com"}
+        },
+        {
+            "mfg_id": "HONDA",
+            "mfg_name": "Honda",
+            "mfg_type": "OEM",
+            "country": "Japan",
+            "website": "honda.com",
+            "contact_info": {"email": "parts@honda.com"}
+        },
+        {
+            "mfg_id": "FORD",
+            "mfg_name": "Ford",
+            "mfg_type": "OEM",
+            "country": "USA",
+            "website": "ford.com",
+            "contact_info": {"email": "parts@ford.com"}
+        },
+        {
+            "mfg_id": "VW",
+            "mfg_name": "Volkswagen",
+            "mfg_type": "OEM",
+            "country": "Germany",
+            "website": "vw.com",
+            "contact_info": {"email": "parts@vw.com"}
+        },
+        {
+            "mfg_id": "MERC",
+            "mfg_name": "Mercedes-Benz",
+            "mfg_type": "OEM",
+            "country": "Germany",
+            "website": "mercedes-benz.com",
+            "contact_info": {"email": "parts@mercedes-benz.com"}
+        },
+        {
+            "mfg_id": "BMW",
+            "mfg_name": "BMW",
+            "mfg_type": "OEM",
+            "country": "Germany",
+            "website": "bmw.com",
+            "contact_info": {"email": "parts@bmw.com"}
+        },
+    ]
+    
+    for mfr_data in manufacturers_data:
+        existing = db.query(Manufacturer).filter(
+            Manufacturer.mfg_id == mfr_data["mfg_id"]
+        ).first()
+        if not existing:
+            manufacturer = Manufacturer(**mfr_data)
+            db.add(manufacturer)
+    
+    db.commit()
+    print(f"Created {len(manufacturers_data)} manufacturers")
+
+
+def seed_hs_codes(db: Session):
+    """Create sample HS codes"""
+    from app.models.classification import HSCode
+    
+    hs_codes_data = [
+        {"hs_code": "8421.23.00", "description_en": "Oil or petrol-filters for internal combustion engines"},
+        {"hs_code": "8708.30.10", "description_en": "Mounted brake linings"},
+        {"hs_code": "8409.91.00", "description_en": "Parts suitable for use solely or principally with spark-ignition internal combustion piston engines"},
+        {"hs_code": "8708.99.00", "description_en": "Other parts and accessories of motor vehicles"},
+        {"hs_code": "8511.40.00", "description_en": "Starter motors and dual purpose starter-generators"},
+        {"hs_code": "8483.10.00", "description_en": "Transmission shafts (including cam shafts and crank shafts) and cranks"},
+    ]
+    
+    for hs_data in hs_codes_data:
+        existing = db.query(HSCode).filter(HSCode.hs_code == hs_data["hs_code"]).first()
+        if not existing:
+            hs_code = HSCode(**hs_data)
+            db.add(hs_code)
+    
+    db.commit()
+    print(f"Created {len(hs_codes_data)} HS codes")
+
+
+
 def seed_all():
     """Run all seed functions"""
     db = SessionLocal()
@@ -130,6 +221,8 @@ def seed_all():
         seed_permissions(db)
         seed_admin_user(db)
         seed_categories(db)
+        seed_manufacturers(db)
+        seed_hs_codes(db)
         print("Database seeding completed successfully!")
     except Exception as e:
         print(f"Error during seeding: {e}")

@@ -21,7 +21,8 @@ class User(BaseModel):
     last_login = Column(DateTime(timezone=True))
     
     # Relationships
-    roles = relationship("UserRole", back_populates="user", cascade="all, delete-orphan", foreign_keys="UserRole.user_id")
+    user_roles = relationship("UserRole", back_populates="user", cascade="all, delete-orphan", foreign_keys="UserRole.user_id")
+    roles = relationship("Role", secondary="user_roles", foreign_keys="[UserRole.user_id, UserRole.role_id]", viewonly=True)
     created_quotes = relationship("Quote", back_populates="creator", foreign_keys="Quote.created_by")
     created_pos = relationship("PurchaseOrder", back_populates="creator", foreign_keys="PurchaseOrder.created_by")
     audit_logs = relationship("AuditLog", back_populates="user", foreign_keys="AuditLog.user_id")
