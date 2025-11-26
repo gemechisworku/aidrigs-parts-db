@@ -51,9 +51,9 @@ services:
     container_name: aidrigs-frontend
     restart: unless-stopped
     environment:
-      VITE_API_URL: http://localhost:8000
+      VITE_API_URL: http://localhost:8000/api/v1
     ports:
-      - "3001:5173"  # Changed external port to 3001 to avoid Windows permission issues
+      - "3000:3000"
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -87,4 +87,3 @@ volumes:
 networks:
   aidrigs-network:
     driver: bridge
-

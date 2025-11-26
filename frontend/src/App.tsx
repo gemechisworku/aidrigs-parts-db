@@ -20,6 +20,7 @@ import PartDetail from './pages/parts/PartDetail';
 // New menu pages
 import PartsTranslation from './pages/translation/PartsTranslation';
 import ManufacturersList from './pages/manufacturers/ManufacturersList';
+import Categories from './pages/admin/Categories';
 import ChangeRequests from './pages/requests/ChangeRequests';
 import MyRequests from './pages/requests/MyRequests';
 import Roles from './pages/admin/Roles';
@@ -35,7 +36,7 @@ function App() {
                     {/* Public Routes */}
                     <Route path="/" element={<Home />} />
 
-                    {/* Auth Routes - Redirect to dashboard if already logged in */}
+                    {/* Auth Routes */}
                     <Route
                         path="/login"
                         element={
@@ -70,11 +71,10 @@ function App() {
                         <Route path="/parts/:id" element={<PartDetail />} />
                         <Route path="/parts/:id/edit" element={<PartForm />} />
 
-                        {/* Translation */}
+                        {/* Translation & Data */}
                         <Route path="/translation" element={<PartsTranslation />} />
-
-                        {/* Manufacturers */}
                         <Route path="/manufacturers" element={<ManufacturersList />} />
+                        <Route path="/categories" element={<Categories />} />
 
                         {/* Requests */}
                         <Route path="/change-requests" element={<ChangeRequests />} />

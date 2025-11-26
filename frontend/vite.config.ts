@@ -5,13 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
     plugins: [react()],
     server: {
-        port: 3000, // Changed from 5173 to avoid Windows permission issues
-        proxy: {
-            '/api': {
-                target: 'http://localhost:8000',  // Connect to Docker backend on localhost
-                changeOrigin: true,
-                secure: false,
-            },
-        },
+        host: '0.0.0.0', // Listen on all interfaces for Docker
+        port: 3000,
     },
 })
