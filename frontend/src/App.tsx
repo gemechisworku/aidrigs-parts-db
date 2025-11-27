@@ -17,9 +17,13 @@ import PartList from './pages/parts/PartList';
 import PartForm from './pages/parts/PartForm';
 import PartDetail from './pages/parts/PartDetail';
 
+// Profile pages
+import Profile from './pages/profile/Profile';
+import ChangePassword from './pages/profile/ChangePassword';
+
 // New menu pages
 import PartsTranslation from './pages/translation/PartsTranslation';
-import ManufacturersList from './pages/manufacturers/ManufacturersList';
+import Manufacturers from './pages/reference/Manufacturers';
 import Categories from './pages/admin/Categories';
 import ChangeRequests from './pages/requests/ChangeRequests';
 import MyRequests from './pages/requests/MyRequests';
@@ -27,6 +31,10 @@ import Roles from './pages/admin/Roles';
 import Permissions from './pages/admin/Permissions';
 import Configs from './pages/admin/Configs';
 import QuotesList from './pages/quotes/QuotesList';
+
+// Reference Data pages
+import Ports from './pages/reference/Ports';
+import PriceTiers from './pages/reference/PriceTiers';
 
 function App() {
     return (
@@ -65,6 +73,10 @@ function App() {
                         {/* Dashboard */}
                         <Route path="/dashboard" element={<Dashboard />} />
 
+                        {/* User Profile */}
+                        <Route path="/profile" element={<Profile />} />
+                        <Route path="/change-password" element={<ChangePassword />} />
+
                         {/* Parts */}
                         <Route path="/parts" element={<PartList />} />
                         <Route path="/parts/new" element={<PartForm />} />
@@ -73,8 +85,12 @@ function App() {
 
                         {/* Translation & Data */}
                         <Route path="/translation" element={<PartsTranslation />} />
-                        <Route path="/manufacturers" element={<ManufacturersList />} />
+                        <Route path="/manufacturers" element={<Manufacturers />} />
                         <Route path="/categories" element={<Categories />} />
+
+                        {/* Reference Data */}
+                        <Route path="/ports" element={<Ports />} />
+                        <Route path="/price-tiers" element={<PriceTiers />} />
 
                         {/* Requests */}
                         <Route path="/change-requests" element={<ChangeRequests />} />

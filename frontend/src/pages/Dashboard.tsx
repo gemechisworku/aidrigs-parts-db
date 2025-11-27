@@ -47,46 +47,8 @@ const Dashboard = () => {
             </header>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* User Info Card */}
-                <div className="card mb-8">
-                    <div className="flex items-center space-x-4">
-                        <div className="h-16 w-16 rounded-full bg-red-100 flex items-center justify-center">
-                            <span className="text-2xl font-bold text-red-600">
-                                {user?.first_name?.charAt(0) || user?.username?.charAt(0) || 'U'}
-                            </span>
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-semibold text-gray-900">
-                                {user?.first_name} {user?.last_name}
-                            </h3>
-                            <p className="text-sm text-gray-600">@{user?.username}</p>
-                            <p className="text-sm text-gray-500">{user?.email}</p>
-                        </div>
-                        {user?.is_superuser && (
-                            <span className="badge badge-primary">Admin</span>
-                        )}
-                    </div>
-                </div>
-
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    {/* API Status */}
-                    <div className="card">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-600">API Status</p>
-                                <p className="text-2xl font-bold text-gray-900 mt-1">
-                                    {apiStatus === 'checking' ? '...' : apiStatus === 'online' ? 'Online' : 'Offline'}
-                                </p>
-                            </div>
-                            <div className={`h-12 w-12 rounded-full flex items-center justify-center ${apiStatus === 'online' ? 'bg-green-100' : 'bg-gray-100'
-                                }`}>
-                                <div className={`h-3 w-3 rounded-full ${apiStatus === 'online' ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
-                                    }`}></div>
-                            </div>
-                        </div>
-                    </div>
-
                     {/* Parts */}
                     <div className="card">
                         <div className="flex items-center justify-between">

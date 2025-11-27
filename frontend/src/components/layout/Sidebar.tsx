@@ -4,7 +4,6 @@
  */
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
 
 interface MenuItem {
     name: string;
@@ -15,7 +14,6 @@ interface MenuItem {
 
 const Sidebar = ({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: () => void }) => {
     const location = useLocation();
-    const { user } = useAuth();
     const [expandedMenus, setExpandedMenus] = useState<string[]>(['Administration']);
 
     const toggleMenu = (menuName: string) => {
@@ -69,6 +67,16 @@ const Sidebar = ({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: ()
             icon: (
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+            ),
+        },
+        {
+            name: 'Ports',
+            path: '/ports',
+            icon: (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
             ),
         },
@@ -127,6 +135,7 @@ const Sidebar = ({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: ()
                         </svg>
                     ),
                 },
+
             ],
         },
         {
@@ -181,25 +190,6 @@ const Sidebar = ({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: ()
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
-                </div>
-
-                {/* User info */}
-                <div className="p-4 border-b border-gray-800">
-                    <div className="flex items-center space-x-3">
-                        <div className="flex-shrink-0">
-                            <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center">
-                                <span className="text-sm font-bold">
-                                    {user?.first_name?.charAt(0) || user?.username?.charAt(0) || 'U'}
-                                </span>
-                            </div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">
-                                {user?.first_name} {user?.last_name}
-                            </p>
-                            <p className="text-xs text-gray-400 truncate">{user?.email}</p>
-                        </div>
-                    </div>
                 </div>
 
                 {/* Navigation */}
@@ -280,13 +270,6 @@ const Sidebar = ({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: ()
                         </div>
                     ))}
                 </nav>
-
-                {/* Footer */}
-                <div className="p-4 border-t border-gray-800">
-                    <p className="text-xs text-gray-500 text-center">
-                        © 2025 AidRigs Parts DB
-                    </p>
-                </div>
             </aside>
         </>
     );

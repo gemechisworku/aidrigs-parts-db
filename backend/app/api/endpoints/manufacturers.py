@@ -69,3 +69,45 @@ def update_manufacturer(
     db.commit()
     db.refresh(manufacturer)
     return manufacturer
+
+@router.get("/{manufacturer_id}", response_model=ManufacturerResponse)
+def read_manufacturer(
+    *,
+    db: Session = Depends(deps.get_db),
+    manufacturer_id: str,
+) -> Any:
+    """
+    Get manufacturer by ID.
+    """
+    manufacturer = db.query(Manufacturer).filter(Manufacturer.id == manufacturer_id).first()
+    if not manufacturer or manufacturer.deleted_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Manufacturer not found",
+        )
+    return manufacturer
+
+@router.delete("/{manufacturer_id}", response_model=ManufacturerResponse)
+def delete_manufacturer(
+    *,
+    db: Session = Depends(deps.get_db),
+    manufacturer_id: str,
+    current_user = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Delete a manufacturer.
+    """
+    manufacturer = db.query(Manufacturer).filter(Manufacturer.id == manufacturer_id).first()
+    if not manufacturer or manufacturer.deleted_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Manufacturer not found",
+        )
+        
+    # Soft delete
+    from datetime import datetime
+    manufacturer.deleted_at = datetime.utcnow()
+    db.add(manufacturer)
+    db.commit()
+    db.refresh(manufacturer)
+    return manufacturer

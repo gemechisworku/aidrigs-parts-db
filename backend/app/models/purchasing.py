@@ -34,25 +34,6 @@ class PurchaseOrder(BaseModel):
         return f"<PurchaseOrder({self.po_number}, status={self.status})>"
 
 
-class Port(BaseModel):
-    """Shipping ports"""
-    
-    __tablename__ = "ports"
-    
-    port_code = Column(String(5), unique=True, nullable=False, index=True)
-    port_name = Column(String(60), nullable=False)
-    country = Column(String(60))
-    city = Column(String(60))
-    port_type = Column(Enum('Sea', 'Air', 'Land', name='port_type_enum'))
-    
-    # Relationships
-    shipments_origin = relationship("Shipment", foreign_keys="Shipment.origin_port_code", back_populates="origin_port")
-    shipments_destination = relationship("Shipment", foreign_keys="Shipment.destination_port_code", back_populates="destination_port")
-    
-    def __repr__(self):
-        return f"<Port({self.port_code}: {self.port_name})>"
-
-
 class Shipment(BaseModel):
     """Shipment tracking"""
     
@@ -72,8 +53,7 @@ class Shipment(BaseModel):
     
     # Relationships
     purchase_order = relationship("PurchaseOrder", back_populates="shipments")
-    origin_port = relationship("Port", foreign_keys=[origin_port_code], back_populates="shipments_origin")
-    destination_port = relationship("Port", foreign_keys=[destination_port_code], back_populates="shipments_destination")
+    # Note: Port relationships removed - ports table managed separately
     
     def __repr__(self):
         return f"<Shipment({self.shipment_number}, status={self.status})>"

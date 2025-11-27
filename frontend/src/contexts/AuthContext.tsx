@@ -132,12 +132,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setState(prev => ({ ...prev, user }));
     };
 
+    /**
+     * Refresh user data from API
+     */
+    const refreshUser = async () => {
+        try {
+            const user = await authAPI.getCurrentUser();
+            localStorage.setItem('user', JSON.stringify(user));
+            setState(prev => ({ ...prev, user }));
+        } catch (error) {
+            console.error('Failed to refresh user data', error);
+        }
+    };
+
     const value: AuthContextType = {
         ...state,
         login,
         register,
         logout,
         updateUser,
+        refreshUser,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

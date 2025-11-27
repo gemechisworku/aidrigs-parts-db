@@ -15,6 +15,25 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+def make_json_serializable(obj):
+    """Convert objects to JSON-serializable format"""
+    from uuid import UUID
+    from datetime import datetime, date
+    from decimal import Decimal
+    
+    if isinstance(obj, (UUID,)):
+        return str(obj)
+    elif isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    elif isinstance(obj, Decimal):
+        return float(obj)
+    elif isinstance(obj, dict):
+        return {k: make_json_serializable(v) for k, v in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [make_json_serializable(item) for item in obj]
+    return obj
+
+
 @router.get("/", response_model=PartListResponse)
 def read_parts(
     db: Session = Depends(deps.get_db),
@@ -241,7 +260,10 @@ def update_part(
         entity_type="parts",
         entity_id=str(part.id),
         user_id=current_user.id,
-        changes={"old": old_values, "new": update_data},
+        changes={
+            "old": make_json_serializable(old_values),
+            "new": make_json_serializable(update_data)
+        },
         request=request
     )
     logger.info(f"Part {part.part_id} updated by user {current_user.username}")

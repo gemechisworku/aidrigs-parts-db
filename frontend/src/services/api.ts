@@ -93,6 +93,18 @@ export const authAPI = {
     },
 
     /**
+     * Update current user profile
+     */
+    async updateProfile(data: {
+        first_name?: string;
+        last_name?: string;
+        email?: string;
+    }) {
+        const response = await apiClient.put('/auth/me', data);
+        return response.data;
+    },
+
+    /**
      * Change password
      */
     async changePassword(oldPassword: string, newPassword: string) {

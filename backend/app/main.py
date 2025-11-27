@@ -39,9 +39,16 @@ app = FastAPI(
 )
 
 # CORS middleware
+origins = settings.CORS_ORIGINS
+# Ensure localhost:3000 is explicitly added (debugging CORS issue)
+if "http://localhost:3000" not in origins:
+    origins.append("http://localhost:3000")
+
+logger.info(f"Configuring CORS with origins: {origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

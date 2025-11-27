@@ -18,7 +18,7 @@ from app.core.security import (
 from app.core.config import settings
 from app.models.user import User
 from app.schemas.auth import UserLogin, UserRegister, Token, PasswordChange
-from app.schemas.user import UserResponse, UserWithRoles
+from app.schemas.user import UserResponse, UserWithRoles, UserUpdate
 from app.core.audit import log_audit
 import logging
 
@@ -160,6 +160,37 @@ async def get_current_user_info(current_user: User = Depends(get_current_active_
     
     Requires valid JWT token in Authorization header
     """
+    return current_user
+
+
+@router.put("/me", response_model=UserResponse)
+async def update_user_me(
+    user_in: UserUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Update current user information
+    """
+    if user_in.email and user_in.email != current_user.email:
+        # Check if email already exists
+        existing_user = db.query(User).filter(User.email == user_in.email).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+        current_user.email = user_in.email
+        
+    if user_in.first_name is not None:
+        current_user.first_name = user_in.first_name
+        
+    if user_in.last_name is not None:
+        current_user.last_name = user_in.last_name
+        
+    db.add(current_user)
+    db.commit()
+    db.refresh(current_user)
     return current_user
 
 

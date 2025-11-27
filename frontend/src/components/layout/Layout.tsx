@@ -37,6 +37,13 @@ const Layout = () => {
                 {/* Page content */}
                 <main className="flex-1 overflow-auto">
                     <Outlet />
+
+                    {/* Footer */}
+                    <footer className="bg-white border-t border-gray-200 py-4 px-6 mt-auto">
+                        <p className="text-sm text-gray-500 text-center">
+                            © 2025 AidRigs Parts DB. All rights reserved.
+                        </p>
+                    </footer>
                 </main>
             </div>
         </div>

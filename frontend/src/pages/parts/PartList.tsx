@@ -3,8 +3,10 @@
  * Full CRUD for vehicle parts with modal form and dropdown selectors
  */
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { partsAPI, Part, PartCreate, Manufacturer, Position } from '../../services/partsApi';
 import { translationAPI, Translation } from '../../services/translationApi';
+import PartDetailContent from './PartDetailContent';
 
 const PartsList = () => {
     const [parts, setParts] = useState<Part[]>([]);
@@ -22,6 +24,8 @@ const PartsList = () => {
     // Modal states
     const [showFormModal, setShowFormModal] = useState(false);
     const [editingPart, setEditingPart] = useState<Part | null>(null);
+    const [showDetailModal, setShowDetailModal] = useState(false);
+    const [selectedPartId, setSelectedPartId] = useState<string | null>(null);
 
     // Form state
     const [formData, setFormData] = useState<PartCreate>({
@@ -235,9 +239,18 @@ const PartsList = () => {
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {parts.map((part) => (
-                                        <tr key={part.id} className="hover:bg-gray-50">
+                                        <tr
+                                            key={part.id}
+                                            className="hover:bg-gray-50 cursor-pointer"
+                                            onClick={() => {
+                                                setSelectedPartId(part.id);
+                                                setShowDetailModal(true);
+                                            }}
+                                        >
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                {part.part_id}
+                                                <Link to={`/parts/${part.id}`} className="text-blue-600 hover:text-blue-900 hover:underline">
+                                                    {part.part_id}
+                                                </Link>
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-600">
                                                 {part.designation || '-'}
@@ -258,13 +271,19 @@ const PartsList = () => {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
                                                 <button
-                                                    onClick={() => handleEdit(part)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleEdit(part);
+                                                    }}
                                                     className="text-blue-600 hover:text-blue-900"
                                                 >
                                                     Edit
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDelete(part.id)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDelete(part.id);
+                                                    }}
                                                     className="text-red-600 hover:text-red-900"
                                                 >
                                                     Delete
@@ -527,6 +546,35 @@ const PartsList = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Detail Modal */}
+            {showDetailModal && selectedPartId && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-2xl font-bold">Part Details</h2>
+                            <button
+                                onClick={() => {
+                                    setShowDetailModal(false);
+                                    setSelectedPartId(null);
+                                }}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <PartDetailContent
+                            partId={selectedPartId}
+                            onClose={() => {
+                                setShowDetailModal(false);
+                                setSelectedPartId(null);
+                            }}
+                        />
                     </div>
                 </div>
             )}
