@@ -23,11 +23,14 @@ class Port(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     port_code = Column(String(5), unique=True, nullable=False, index=True)
     port_name = Column(String(60))
-    country = Column(String(60))
+    country = Column(String(2), ForeignKey("countries.code"))
     city = Column(String(60))
-    type = Column(SQLEnum(PortTypeEnum))
-    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+    type = Column("port_type", String(4))
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now(), default=func.now())
+    
+    # Relationship
+    country_details = relationship("Country", backref="ports")
 
 
 class PriceTier(Base):

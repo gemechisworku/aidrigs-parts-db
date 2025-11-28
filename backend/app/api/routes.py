@@ -2,7 +2,7 @@
 API router configuration
 """
 from fastapi import APIRouter
-from app.api.endpoints import auth, manufacturers, categories, translations, parts, positions, audit_logs, ports, price_tiers, partners, price_tier_maps, countries
+from app.api.endpoints import auth, manufacturers, categories, translations, parts, positions, audit_logs, ports, price_tiers, partners, price_tier_maps, countries, hs_codes, vehicles
 
 api_router = APIRouter()
 
@@ -19,6 +19,8 @@ api_router.include_router(audit_logs.router, prefix="/audit-logs", tags=["audit-
 api_router.include_router(ports.router, prefix="/ports", tags=["ports"])
 api_router.include_router(price_tiers.router, prefix="/price-tiers", tags=["price-tiers"])
 api_router.include_router(countries.router, prefix="/countries", tags=["countries"])
+api_router.include_router(hs_codes.router, prefix="/hs-codes", tags=["hs-codes"])
+api_router.include_router(vehicles.router, prefix="/vehicles", tags=["vehicles"])
 
 # Partners
 api_router.include_router(partners.router, prefix="/partners", tags=["partners"])

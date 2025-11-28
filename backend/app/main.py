@@ -2,7 +2,8 @@
 AidRigs Parts Database - FastAPI Main Application
 """
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base
@@ -22,12 +23,12 @@ async def lifespan(app: FastAPI):
     Lifespan context manager for startup and shutdown events
     """
     # Startup
-    logger.info("🚀 Starting AidRigs Parts Database API...")
+    logger.info("Starting AidRigs Parts Database API...")
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"Database: Connected")
     yield
     # Shutdown
-    logger.info("👋 Shutting down AidRigs Parts Database API...")
+    logger.info("Shutting down AidRigs Parts Database API...")
 
 
 # Create FastAPI application
@@ -57,10 +58,19 @@ app.add_middleware(
 # Logging middleware
 app.add_middleware(LoggingMiddleware)
 
-logger.info("✅ Middleware configured")
+logger.info("Middleware configured")
 
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    logger.error(f"Global exception: {str(exc)}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal Server Error: {str(exc)}"},
+    )
 
 
 @app.get("/")

@@ -26,7 +26,9 @@ async def get_ports(
     current_user: User = Depends(get_current_active_user)
 ):
     """Get all ports with optional search"""
-    query = db.query(Port)
+    from sqlalchemy.orm import joinedload
+    
+    query = db.query(Port).options(joinedload(Port.country_details))
     
     if search:
         query = query.filter(
@@ -37,7 +39,16 @@ async def get_ports(
         )
     
     ports = query.offset(skip).limit(limit).all()
-    return ports
+    
+    # Manually add country_name to each port
+    result = []
+    for port in ports:
+        port_dict = PortResponse.model_validate(port).model_dump()
+        if port.country_details:
+            port_dict['country_name'] = port.country_details.name
+        result.append(port_dict)
+    
+    return result
 
 
 @router.get("/{port_id}", response_model=PortResponse)
@@ -47,10 +58,18 @@ async def get_port(
     current_user: User = Depends(get_current_active_user)
 ):
     """Get a single port by ID"""
-    port = db.query(Port).filter(Port.id == port_id).first()
+    from sqlalchemy.orm import joinedload
+    
+    port = db.query(Port).options(joinedload(Port.country_details)).filter(Port.id == port_id).first()
     if not port:
         raise HTTPException(status_code=404, detail="Port not found")
-    return port
+    
+    # Manually add country_name
+    port_dict = PortResponse.model_validate(port).model_dump()
+    if port.country_details:
+        port_dict['country_name'] = port.country_details.name
+    
+    return port_dict
 
 
 @router.post("/", response_model=PortResponse, status_code=status.HTTP_201_CREATED)
