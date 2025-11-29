@@ -8,6 +8,7 @@ export interface Port {
     port_code: string;
     port_name?: string;
     country?: string;
+    country_name?: string;
     city?: string;
     type?: 'Sea' | 'Air' | 'Land';
     created_at: string;

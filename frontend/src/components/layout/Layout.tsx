@@ -11,14 +11,14 @@ const Layout = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
+        <div className="h-screen bg-gray-50 flex overflow-hidden">
             {/* Sidebar */}
             <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
 
             {/* Main content */}
-            <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex-1 flex flex-col min-w-0 h-full">
                 {/* Navbar with hamburger menu */}
-                <header className="sticky top-0 z-30 bg-white shadow-sm border-b border-gray-200">
+                <header className="sticky top-0 z-30 bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
                     <div className="flex items-center justify-between h-16 px-4">
                         <button
                             onClick={toggleSidebar}
@@ -35,16 +35,16 @@ const Layout = () => {
                 </header>
 
                 {/* Page content */}
-                <main className="flex-1 overflow-auto">
+                <main className="flex-1 overflow-y-auto">
                     <Outlet />
-
-                    {/* Footer */}
-                    <footer className="bg-white border-t border-gray-200 py-4 px-6 mt-auto">
-                        <p className="text-sm text-gray-500 text-center">
-                            © 2025 AidRigs Parts DB. All rights reserved.
-                        </p>
-                    </footer>
                 </main>
+
+                {/* Footer */}
+                <footer className="bg-white border-t border-gray-200 py-4 px-6 flex-shrink-0">
+                    <p className="text-sm text-gray-500 text-center">
+                        © 2025 AidRigs Parts DB. All rights reserved.
+                    </p>
+                </footer>
             </div>
         </div>
     );

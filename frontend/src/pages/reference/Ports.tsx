@@ -3,9 +3,11 @@
  */
 import { useState, useEffect } from 'react';
 import { portsAPI, Port, PortCreate } from '../../services/portsApi';
+import { countriesAPI, Country } from '../../services/countriesApi';
 
 const Ports = () => {
     const [ports, setPorts] = useState<Port[]>([]);
+    const [countries, setCountries] = useState<Country[]>([]);
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
@@ -23,6 +25,7 @@ const Ports = () => {
 
     useEffect(() => {
         loadPorts();
+        loadCountries();
     }, [search]);
 
     const loadPorts = async () => {
@@ -34,6 +37,15 @@ const Ports = () => {
             console.error('Error loading ports:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadCountries = async () => {
+        try {
+            const data = await countriesAPI.getCountries();
+            setCountries(data);
+        } catch (error) {
+            console.error('Error loading countries:', error);
         }
     };
 
@@ -154,8 +166,8 @@ const Ports = () => {
                                 <tr className="bg-gray-50">
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">City</th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Country</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">City</th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
                                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                                 </tr>
@@ -165,8 +177,12 @@ const Ports = () => {
                                     <tr key={port.id} className="hover:bg-gray-50">
                                         <td className="px-4 py-4 text-sm font-medium text-gray-900">{port.port_code}</td>
                                         <td className="px-4 py-4 text-sm text-gray-700">{port.port_name}</td>
+
+                                        <td className="px-4 py-4 text-sm text-gray-700">
+                                            {port.country_name || port.country || '-'}
+                                        </td>
                                         <td className="px-4 py-4 text-sm text-gray-700">{port.city}</td>
-                                        <td className="px-4 py-4 text-sm text-gray-700">{port.country}</td>
+
                                         <td className="px-4 py-4 text-sm text-gray-700">
                                             {port.type && <span className="badge badge-primary">{port.type}</span>}
                                         </td>
@@ -225,21 +241,28 @@ const Ports = () => {
                                             className="input"
                                         />
                                     </div>
+
+                                    <div>
+                                        <label className="label">Country</label>
+                                        <select
+                                            value={formData.country}
+                                            onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                                            className="input"
+                                        >
+                                            <option value="">Select Country...</option>
+                                            {countries.map(country => (
+                                                <option key={country.code} value={country.code}>
+                                                    {country.name} ({country.code})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
                                     <div>
                                         <label className="label">City</label>
                                         <input
                                             type="text"
                                             value={formData.city}
                                             onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                                            className="input"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="label">Country</label>
-                                        <input
-                                            type="text"
-                                            value={formData.country}
-                                            onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                                             className="input"
                                         />
                                     </div>

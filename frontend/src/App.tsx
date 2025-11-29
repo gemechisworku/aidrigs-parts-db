@@ -35,6 +35,11 @@ import QuotesList from './pages/quotes/QuotesList';
 // Reference Data pages
 import Ports from './pages/reference/Ports';
 import PriceTiers from './pages/reference/PriceTiers';
+import HSCodes from './pages/reference/HSCodes';
+import Vehicles from './pages/reference/Vehicles';
+
+// Business pages
+import Partners from './pages/partners/Partners';
 
 function App() {
     return (
@@ -91,6 +96,11 @@ function App() {
                         {/* Reference Data */}
                         <Route path="/ports" element={<Ports />} />
                         <Route path="/price-tiers" element={<PriceTiers />} />
+                        <Route path="/hs-codes" element={<HSCodes />} />
+                        <Route path="/vehicles" element={<Vehicles />} />
+
+                        {/* Business */}
+                        <Route path="/partners" element={<Partners />} />
 
                         {/* Requests */}
                         <Route path="/change-requests" element={<ChangeRequests />} />
