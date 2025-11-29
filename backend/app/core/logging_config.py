@@ -4,6 +4,7 @@ Logging configuration for development
 import logging
 import sys
 from pathlib import Path
+from datetime import datetime
 
 # Create logs directory
 LOGS_DIR = Path("logs")
@@ -39,6 +40,9 @@ def setup_logging(log_level: str = "INFO"):
     root_logger = logging.getLogger()
     root_logger.setLevel(getattr(logging, log_level.upper()))
     
+    # Clear existing handlers to avoid duplicates
+    root_logger.handlers.clear()
+    
     # Console handler with colors
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(logging.DEBUG)
@@ -48,8 +52,11 @@ def setup_logging(log_level: str = "INFO"):
     )
     console_handler.setFormatter(console_formatter)
     
-    # File handler for all logs
-    file_handler = logging.FileHandler(LOGS_DIR / "app.log")
+    # File handler with date in filename
+    today = datetime.now().strftime('%Y-%m-%d')
+    log_filename = LOGS_DIR / f"{today}.log"
+    
+    file_handler = logging.FileHandler(log_filename, encoding='utf-8')
     file_handler.setLevel(logging.DEBUG)
     file_formatter = logging.Formatter(
         '[%(asctime)s] [%(levelname)s] [%(name)s:%(lineno)d] - %(message)s',
@@ -64,5 +71,7 @@ def setup_logging(log_level: str = "INFO"):
     # Quiet down noisy loggers
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+    
+    logging.info(f"Logging to file: {log_filename}")
     
     return root_logger

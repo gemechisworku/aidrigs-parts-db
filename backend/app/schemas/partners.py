@@ -21,8 +21,8 @@ class ContactBase(BaseModel):
     full_name: Optional[str] = Field(None, max_length=60)
     job_title: Optional[str] = Field(None, max_length=60)
     email: Optional[str] = Field(None, max_length=60)
-    phone1: Optional[str] = Field(None, max_length=12)
-    phone2: Optional[str] = Field(None, max_length=12)
+    phone1: Optional[str] = Field(None, max_length=20)
+    phone2: Optional[str] = Field(None, max_length=20)
 
 
 class ContactCreate(ContactBase):

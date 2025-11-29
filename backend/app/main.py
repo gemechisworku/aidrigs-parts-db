@@ -44,6 +44,8 @@ origins = settings.CORS_ORIGINS
 # Ensure localhost:3000 is explicitly added (debugging CORS issue)
 if "http://localhost:3000" not in origins:
     origins.append("http://localhost:3000")
+if "http://localhost:5175" not in origins:
+    origins.append("http://localhost:5175")
 
 logger.info(f"Configuring CORS with origins: {origins}")
 

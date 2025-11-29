@@ -16,8 +16,17 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         # Start timer
         start_time = time.time()
         
-        # Log request
-        logger.info(f"→ {request.method} {request.url.path}")
+        # Build request details
+        path = request.url.path
+        query_params = str(request.url.query) if request.url.query else ""
+        client_ip = request.client.host if request.client else "unknown"
+        
+        # Log request with details
+        request_log = f"→ {request.method} {path}"
+        if query_params:
+            request_log += f"?{query_params}"
+        request_log += f" [IP: {client_ip}]"
+        logger.info(request_log)
         
         # Process request
         try:
@@ -29,17 +38,16 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             # Log response
             status_code = response.status_code
             log_level = logging.INFO if status_code < 400 else logging.ERROR
-            logger.log(
-                log_level,
-                f"← {request.method} {request.url.path} - {status_code} ({duration:.2f}s)"
-            )
+            
+            response_log = f"← {request.method} {path} - {status_code} ({duration:.3f}s)"
+            logger.log(log_level, response_log)
             
             return response
             
         except Exception as e:
             duration = time.time() - start_time
             logger.error(
-                f"← {request.method} {request.url.path} - ERROR ({duration:.2f}s): {str(e)}",
+                f"← {request.method} {path} - ERROR ({duration:.3f}s): {str(e)}",
                 exc_info=True
             )
             raise

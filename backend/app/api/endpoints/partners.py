@@ -10,8 +10,8 @@ import io
 
 from app.core.database import get_db
 from app.core.security import get_current_active_user
-from app.models.partners import Partner
-from app.schemas.partners import PartnerCreate, PartnerUpdate, PartnerResponse
+from app.models.partners import Partner, Contact
+from app.schemas.partners import PartnerCreate, PartnerUpdate, PartnerResponse, ContactCreate, ContactUpdate, ContactResponse
 from app.models.user import User
 
 router = APIRouter()
@@ -76,7 +76,7 @@ async def create_partner(
                 detail=f"Partner with code {partner_data.code} already exists"
             )
     
-    partner = Partner(**partner_data.model_dump())
+    partner = Partner(**partner_data.model_dump(mode='json'))
     db.add(partner)
     db.commit()
     db.refresh(partner)
@@ -95,7 +95,7 @@ async def update_partner(
     if not partner:
         raise HTTPException(status_code=404, detail="Partner not found")
     
-    update_data = partner_data.model_dump(exclude_unset=True)
+    update_data = partner_data.model_dump(exclude_unset=True, mode='json')
     for field, value in update_data.items():
         setattr(partner, field, value)
     
@@ -199,3 +199,79 @@ async def download_template(current_user: User = Depends(get_current_active_user
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=partners_template.csv"}
     )
+
+
+# Contact Endpoints
+
+@router.get("/{partner_id}/contacts", response_model=List[ContactResponse])
+async def get_partner_contacts(
+    partner_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get all contacts for a partner"""
+    partner = db.query(Partner).filter(Partner.id == partner_id).first()
+    if not partner:
+        raise HTTPException(status_code=404, detail="Partner not found")
+    
+    return partner.contacts
+
+
+@router.post("/{partner_id}/contacts", response_model=ContactResponse, status_code=status.HTTP_201_CREATED)
+async def create_contact(
+    partner_id: UUID,
+    contact_data: ContactCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Create a new contact for a partner"""
+    partner = db.query(Partner).filter(Partner.id == partner_id).first()
+    if not partner:
+        raise HTTPException(status_code=404, detail="Partner not found")
+    
+    # Ensure partner_id matches URL
+    if contact_data.partner_id != partner_id:
+        raise HTTPException(status_code=400, detail="Partner ID mismatch")
+    
+    contact = Contact(**contact_data.model_dump())
+    db.add(contact)
+    db.commit()
+    db.refresh(contact)
+    return contact
+
+
+@router.put("/contacts/{contact_id}", response_model=ContactResponse)
+async def update_contact(
+    contact_id: UUID,
+    contact_data: ContactUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Update a contact"""
+    contact = db.query(Contact).filter(Contact.id == contact_id).first()
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    
+    update_data = contact_data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(contact, field, value)
+    
+    db.commit()
+    db.refresh(contact)
+    return contact
+
+
+@router.delete("/contacts/{contact_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_contact(
+    contact_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Delete a contact"""
+    contact = db.query(Contact).filter(Contact.id == contact_id).first()
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    
+    db.delete(contact)
+    db.commit()
+    return None
