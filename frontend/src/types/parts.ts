@@ -52,6 +52,7 @@ export interface Part {
     manufacturer?: Manufacturer;
     part_translation?: PartTranslation;
     position?: Position;
+    approval_status?: 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
 }
 
 export interface PartCreate {

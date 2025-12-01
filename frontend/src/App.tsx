@@ -41,6 +41,9 @@ import Vehicles from './pages/reference/Vehicles';
 // Business pages
 import Partners from './pages/partners/Partners';
 
+// Approval pages
+import PendingApprovals from './pages/approvals/PendingApprovals';
+
 function App() {
     return (
         <AuthProvider>
@@ -110,6 +113,7 @@ function App() {
                         <Route path="/admin/roles" element={<Roles />} />
                         <Route path="/admin/permissions" element={<Permissions />} />
                         <Route path="/admin/configs" element={<Configs />} />
+                        <Route path="/admin/approvals" element={<PendingApprovals />} />
 
                         {/* Quotes */}
                         <Route path="/quotes" element={<QuotesList />} />

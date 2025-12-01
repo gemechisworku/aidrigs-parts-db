@@ -71,6 +71,7 @@ class PartResponse(PartBase):
     manufacturer: Optional[ManufacturerNested] = None
     part_translation: Optional[PartTranslationNested] = None
     position: Optional[PositionNested] = None
+    approval_status: Optional[str] = None
     
     class Config:
         from_attributes = True
@@ -91,3 +92,27 @@ class PartFilter(BaseModel):
     drive_side: Optional[str] = None
     page: int = 1
     page_size: int = 20
+
+# Part Equivalence Schemas
+class PartEquivalenceBase(BaseModel):
+    """Base schema for part equivalence"""
+    part_id: UUID4
+    equivalent_part_id: UUID4
+
+class PartEquivalenceCreate(PartEquivalenceBase):
+    """Schema for creating a part equivalence relationship"""
+    pass
+
+class PartEquivalenceResponse(BaseModel):
+    """Schema for part equivalence response with part details"""
+    part_id: UUID4
+    equivalent_part_id: UUID4
+    equivalent_part: Optional[PartResponse] = None
+    
+    class Config:
+        from_attributes = True
+
+class PartEquivalenceBulkCreate(BaseModel):
+    """Schema for bulk creating part equivalences"""
+    equivalences: List[PartEquivalenceCreate]
+

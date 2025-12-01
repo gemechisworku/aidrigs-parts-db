@@ -1,6 +1,7 @@
 """
 AidRigs Parts Database - FastAPI Main Application
 """
+# Trigger reload after enum fix
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -44,6 +45,8 @@ origins = settings.CORS_ORIGINS
 # Ensure localhost:3000 is explicitly added (debugging CORS issue)
 if "http://localhost:3000" not in origins:
     origins.append("http://localhost:3000")
+if "http://localhost:5173" not in origins:
+    origins.append("http://localhost:5173")
 if "http://localhost:5175" not in origins:
     origins.append("http://localhost:5175")
 

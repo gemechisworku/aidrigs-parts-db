@@ -1,19 +1,25 @@
 """
 Part models including main parts and equivalence
 """
-from sqlalchemy import Column, String, Integer, Numeric, Enum, Text, ForeignKey, Table
+from sqlalchemy import Column, String, Integer, Numeric, Enum, Text, ForeignKey, Table, DateTime
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from app.models.base import BaseModel
 from app.core.database import Base
+from app.models.approval import ApprovalStatus
 
 
 # Association table for parts equivalence
 parts_equivalence = Table(
     'parts_equivalence',
     Base.metadata,
-    Column('part_id', UUID(as_uuid=True), ForeignKey('parts.id', ondelete='CASCADE'), primary_key=True),
-    Column('equivalent_part_id', UUID(as_uuid=True), ForeignKey('parts.id', ondelete='CASCADE'), primary_key=True)
+    Column('id', UUID(as_uuid=True), primary_key=True),
+    Column('part_id', UUID(as_uuid=True), ForeignKey('parts.id', ondelete='CASCADE')),
+    Column('equivalent_part_id', UUID(as_uuid=True), ForeignKey('parts.id', ondelete='CASCADE')),
+    Column('created_at', DateTime, nullable=False),
+    Column('created_by', UUID(as_uuid=True), ForeignKey('users.id')),
+    Column('deleted_at', DateTime, nullable=True),
+    Column('deleted_by', UUID(as_uuid=True), ForeignKey('users.id'))
 )
 
 
@@ -41,6 +47,17 @@ class Part(BaseModel):
     note = Column(Text)
     image_url = Column(Text)
     part_metadata = Column(JSONB)  # Flexible additional data (renamed from 'metadata' to avoid SQLAlchemy conflict)
+    
+    # Approval system fields
+    approval_status = Column(Enum(ApprovalStatus), default=ApprovalStatus.APPROVED, nullable=False, index=True)
+    submitted_at = Column(DateTime, nullable=True)  # When submitted for approval
+    reviewed_at = Column(DateTime, nullable=True)   # When approved/rejected
+    reviewed_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    rejection_reason = Column(Text, nullable=True)
+    
+    # Equivalence System
+    # Computed view for fast transitive lookups. Source of truth is parts_equivalence table.
+    equivalence_group_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     
     # Relationships
     manufacturer = relationship("Manufacturer", back_populates="parts")

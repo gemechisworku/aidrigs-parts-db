@@ -13,11 +13,14 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Drop the old enum type if it exists with wrong values
-    op.execute("DROP TYPE IF EXISTS partnertypeenum CASCADE")
+    # 1. Temporarily change column to text to detach from enum
+    op.execute("ALTER TABLE partners ALTER COLUMN type TYPE VARCHAR(50)")
     
-    # Ensure partner_type_enum exists with correct lowercase values
-    op.execute("DROP TYPE IF EXISTS partner_type_enum CASCADE")
+    # 2. Drop the old enum types
+    op.execute("DROP TYPE IF EXISTS partnertypeenum")
+    op.execute("DROP TYPE IF EXISTS partner_type_enum")
+    
+    # 3. Create the new enum type
     op.execute("""
         CREATE TYPE partner_type_enum AS ENUM (
             'supplier',
@@ -27,14 +30,14 @@ def upgrade() -> None:
         )
     """)
     
-    # Recreate the partners table type column
+    # 4. Convert column back to enum
     op.execute("""
         ALTER TABLE partners 
         ALTER COLUMN type TYPE partner_type_enum 
-        USING type::text::partner_type_enum
+        USING type::partner_type_enum
     """)
 
 
 def downgrade() -> None:
-    # Revert to old enum if needed
-    pass
+    # Revert to text if needed, simpler than reconstructing old state
+    op.execute("ALTER TABLE partners ALTER COLUMN type TYPE VARCHAR(50)")

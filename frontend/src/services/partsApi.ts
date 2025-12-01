@@ -66,4 +66,30 @@ export const partsAPI = {
         const response = await apiClient.delete<{ message: string; part_id: string }>(`/parts/${id}`);
         return response.data;
     },
+
+    // Part Equivalences
+    getEquivalences: async (partId: string) => {
+        const response = await apiClient.get(`/parts/${partId}/equivalences`);
+        return response.data;
+    },
+
+    createEquivalence: async (partId: string, equivalentPartId: string) => {
+        const response = await apiClient.post(`/parts/${partId}/equivalences`, {
+            part_id: partId,
+            equivalent_part_id: equivalentPartId
+        });
+        return response.data;
+    },
+
+    deleteEquivalence: async (partId: string, equivalentPartId: string) => {
+        const response = await apiClient.delete(`/parts/${partId}/equivalences/${equivalentPartId}`);
+        return response.data;
+    },
+
+    bulkCreateEquivalences: async (partId: string, partIds: string[]) => {
+        const response = await apiClient.post(`/parts/${partId}/equivalences/bulk`, {
+            part_ids: partIds
+        });
+        return response.data;
+    },
 };

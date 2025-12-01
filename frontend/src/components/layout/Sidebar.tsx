@@ -2,19 +2,40 @@
  * Sidebar Navigation Component
  * Main navigation menu for the application
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { approvalsAPI } from '../../services/approvalsApi';
 
 interface MenuItem {
     name: string;
     path: string;
     icon: JSX.Element;
+    badge?: number;
     children?: MenuItem[];
 }
 
 const Sidebar = ({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: () => void }) => {
     const location = useLocation();
     const [expandedMenus, setExpandedMenus] = useState<string[]>(['Administration']);
+    const [pendingCount, setPendingCount] = useState(0);
+
+    // Load pending approvals count
+    useEffect(() => {
+        const loadPendingCount = async () => {
+            try {
+                const summary = await approvalsAPI.getSummary();
+                setPendingCount(summary.total_pending);
+            } catch (error) {
+                // Silently fail - user might not have permissions
+                console.error('Failed to load approval summary:', error);
+            }
+        };
+        loadPendingCount();
+
+        // Refresh every 30 seconds
+        const interval = setInterval(loadPendingCount, 30000);
+        return () => clearInterval(interval);
+    }, []);
 
     const toggleMenu = (menuName: string) => {
         setExpandedMenus(prev =>
@@ -162,6 +183,16 @@ const Sidebar = ({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: ()
                         </svg>
                     ),
                 },
+                {
+                    name: 'Pending Approvals',
+                    path: '/admin/approvals',
+                    icon: (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    ),
+                    badge: pendingCount > 0 ? pendingCount : undefined,
+                },
 
             ],
         },
@@ -261,7 +292,7 @@ const Sidebar = ({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: ()
                                                     to={child.path}
                                                     onClick={() => window.innerWidth < 1024 && toggleSidebar()}
                                                     className={`
-                                                        flex items-center space-x-3 px-3 py-2 rounded-lg
+                                                        flex items-center justify-between px-3 py-2 rounded-lg
                                                         text-sm transition-colors
                                                         ${isActive(child.path)
                                                             ? 'bg-red-600 text-white'
@@ -269,8 +300,15 @@ const Sidebar = ({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: ()
                                                         }
                                                     `}
                                                 >
-                                                    {child.icon}
-                                                    <span>{child.name}</span>
+                                                    <div className="flex items-center space-x-3">
+                                                        {child.icon}
+                                                        <span>{child.name}</span>
+                                                    </div>
+                                                    {child.badge && (
+                                                        <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                                            {child.badge}
+                                                        </span>
+                                                    )}
                                                 </Link>
                                             ))}
                                         </div>
