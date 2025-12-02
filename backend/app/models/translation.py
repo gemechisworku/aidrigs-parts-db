@@ -1,10 +1,11 @@
 """
 Part translation and position models
 """
-from sqlalchemy import Column, String, Enum, Text, ForeignKey
+from sqlalchemy import Column, String, Enum, Text, ForeignKey, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.models.base import BaseModel
+from app.models.approval import ApprovalStatus
 
 
 class PartTranslationStandardization(BaseModel):
@@ -20,6 +21,14 @@ class PartTranslationStandardization(BaseModel):
     drive_side_specific = Column(Enum('yes', 'no', name='drive_side_specific_enum'), default='no')
     alternative_names = Column(String(255))  # Comma-separated or JSON
     links = Column(Text)
+    
+    # Approval system fields
+    approval_status = Column(Enum(ApprovalStatus), default=ApprovalStatus.APPROVED, nullable=False, index=True)
+    submitted_at = Column(DateTime, nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    reviewed_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    rejection_reason = Column(Text, nullable=True)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     
     # Relationships
     hs_code_obj = relationship("HSCode", back_populates="parts")

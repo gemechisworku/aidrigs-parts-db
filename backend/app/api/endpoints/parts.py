@@ -129,16 +129,34 @@ def create_part(
                 detail=f"Manufacturer with id '{part_in.mfg_id}' not found",
             )
     
-    # Validate part_name_en exists if provided
+    # Validate/Auto-create part_name_en if provided
     if part_in.part_name_en:
+        from app.models.approval import ApprovalStatus
+        from datetime import datetime
+        
+        # First check for approved translations
         translation = db.query(PartTranslationStandardization).filter(
-            PartTranslationStandardization.part_name_en == part_in.part_name_en
+            PartTranslationStandardization.part_name_en == part_in.part_name_en,
+            PartTranslationStandardization.approval_status == ApprovalStatus.APPROVED
         ).first()
+        
         if not translation:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Part translation '{part_in.part_name_en}' not found",
-            )
+            # Check if there's already a pending translation
+            pending_translation = db.query(PartTranslationStandardization).filter(
+                PartTranslationStandardization.part_name_en == part_in.part_name_en
+            ).first()
+            
+            if not pending_translation:
+                # Auto-create new translation with pending approval
+                logger.info(f"Auto-creating translation '{part_in.part_name_en}' with pending approval status")
+                new_translation = PartTranslationStandardization(
+                    part_name_en=part_in.part_name_en,
+                    approval_status=ApprovalStatus.PENDING_APPROVAL,
+                    submitted_at=datetime.utcnow(),
+                    created_by=current_user.id
+                )
+                db.add(new_translation)
+                db.flush()  # Get ID without full commit
     
     # Validate position_id exists if provided
     if part_in.position_id:

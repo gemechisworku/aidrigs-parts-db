@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { partsAPI, Part, PartCreate, Manufacturer, Position } from '../../services/partsApi';
 import { translationAPI, Translation } from '../../services/translationApi';
 import PartDetailContent from './PartDetailContent';
+import CreatableSelect from '../../components/common/CreatableSelect';
 
 const PartsList = () => {
     const [parts, setParts] = useState<Part[]>([]);
@@ -384,18 +385,19 @@ const PartsList = () => {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Part Name (EN)
                                     </label>
-                                    <select
+                                    <CreatableSelect
                                         value={formData.part_name_en}
-                                        onChange={(e) => setFormData({ ...formData, part_name_en: e.target.value })}
+                                        onChange={(value) => setFormData({ ...formData, part_name_en: value })}
+                                        options={translations.map((trans) => ({
+                                            value: trans.part_name_en,
+                                            label: trans.part_name_en,
+                                            isPending: trans.approval_status === 'PENDING_APPROVAL'
+                                        }))}
+                                        placeholder="Select or type part name..."
                                         className="input"
-                                    >
-                                        <option value="">-- Select Part Name --</option>
-                                        {translations.map((trans) => (
-                                            <option key={trans.id} value={trans.part_name_en}>
-                                                {trans.part_name_en}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        name="part_name_en"
+                                        id="part_name_en"
+                                    />
                                 </div>
 
                                 {/* Position */}

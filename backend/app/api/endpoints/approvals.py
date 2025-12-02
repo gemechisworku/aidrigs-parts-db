@@ -9,10 +9,12 @@ from datetime import datetime
 from app.api import deps
 from app.models.part import Part
 from app.models.approval import ApprovalLog, ApprovalStatus
+from app.models.translation import PartTranslationStandardization
 from app.schemas.approval import (
     ApprovalAction, PendingItem, ApprovalLogResponse, 
     PendingPartResponse, ApprovalSummary
 )
+from app.schemas.translation import PendingTranslationResponse
 import logging
 
 logger = logging.getLogger(__name__)
@@ -52,9 +54,25 @@ def get_pending_items(
                 }
             })
     
-    # Future: Add other entity types here
-    # if not entity_type or entity_type == "translation":
-    #     translations = db.query(Translation).filter(...)
+    # Get pending translations
+    if not entity_type or entity_type == "translation":
+        translations = db.query(PartTranslationStandardization).filter(
+            PartTranslationStandardization.approval_status == ApprovalStatus.PENDING_APPROVAL
+        ).all()
+        
+        for translation in translations:
+            pending_items.append({
+                "entity_type": "translation",
+                "entity_id": str(translation.id),
+                "entity_identifier": translation.part_name_en,
+                "status": translation.approval_status,
+                "submitted_at": translation.submitted_at,
+                "details": {
+                    "part_name_en": translation.part_name_en,
+                    "part_name_pr": translation.part_name_pr,
+                    "part_name_fr": translation.part_name_fr
+                }
+            })
     
     return pending_items
 
@@ -75,6 +93,126 @@ def get_pending_parts(
     ).offset(skip).limit(limit).all()
     
     return parts
+
+
+@router.get("/pending/translations", response_model=List[PendingTranslationResponse])
+def get_pending_translations(
+    *,
+    db: Session = Depends(deps.get_db),
+    skip: int = 0,
+    limit: int = 100,
+    current_user = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Get pending translations specifically with full details.
+    """
+    translations = db.query(PartTranslationStandardization).filter(
+        PartTranslationStandardization.approval_status == ApprovalStatus.PENDING_APPROVAL
+    ).offset(skip).limit(limit).all()
+    
+    return translations
+
+
+@router.post("/translations/{translation_id}/approve")
+def approve_translation(
+    *,
+    db: Session = Depends(deps.get_db),
+    translation_id: str,
+    action: ApprovalAction,
+    current_user = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Approve a pending translation.
+    """
+    translation = db.query(PartTranslationStandardization).filter(PartTranslationStandardization.id == translation_id).first()
+    if not translation:
+        raise HTTPException(status_code=404, detail="Translation not found")
+    
+    if translation.approval_status not in [ApprovalStatus.PENDING_APPROVAL, ApprovalStatus.REJECTED]:
+        raise HTTPException(status_code=400, detail=f"Translation is not pending approval (current status: {translation.approval_status})")
+    
+    old_status = translation.approval_status
+    
+    # Update translation status
+    translation.approval_status = ApprovalStatus.APPROVED
+    translation.reviewed_at = datetime.utcnow()
+    translation.reviewed_by = current_user.id
+    translation.rejection_reason = None
+    
+    # Log the approval
+    approval_log = ApprovalLog(
+        entity_type="translation",
+        entity_id=translation.id,
+        old_status=old_status,
+        new_status=ApprovalStatus.APPROVED,
+        reviewed_by=current_user.id,
+        review_notes=action.review_notes
+    )
+    db.add(approval_log)
+    
+    db.commit()
+    db.refresh(translation)
+    
+    logger.info(f"Translation {translation.part_name_en} approved by user {current_user.username}")
+    
+    return {
+        "message": "Translation approved successfully",
+        "translation_id": str(translation.id),
+        "part_name_en": translation.part_name_en
+    }
+
+
+@router.post("/translations/{translation_id}/reject")
+def reject_translation(
+    *,
+    db: Session = Depends(deps.get_db),
+    translation_id: str,
+    action: ApprovalAction,
+    current_user = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Reject a pending translation.
+    """
+    if not action.rejection_reason or not action.rejection_reason.strip():
+        raise HTTPException(status_code=400, detail="Rejection reason is required")
+    
+    translation = db.query(PartTranslationStandardization).filter(PartTranslationStandardization.id == translation_id).first()
+    if not translation:
+        raise HTTPException(status_code=404, detail="Translation not found")
+    
+    if translation.approval_status != ApprovalStatus.PENDING_APPROVAL:
+        raise HTTPException(status_code=400, detail=f"Translation is not pending approval (current status: {translation.approval_status})")
+    
+    old_status = translation.approval_status
+    
+    # Update translation status
+    translation.approval_status = ApprovalStatus.REJECTED
+    translation.reviewed_at = datetime.utcnow()
+    translation.reviewed_by = current_user.id
+    translation.rejection_reason = action.rejection_reason
+    
+    # Log the rejection
+    approval_log = ApprovalLog(
+        entity_type="translation",
+        entity_id=translation.id,
+        old_status=old_status,
+        new_status=ApprovalStatus.REJECTED,
+        reviewed_by=current_user.id,
+        review_notes=action.rejection_reason
+    )
+    db.add(approval_log)
+    
+    db.commit()
+    db.refresh(translation)
+    
+    logger.info(f"Translation {translation.part_name_en} rejected by user {current_user.username}")
+    
+    return {
+        "message": "Translation rejected",
+        "translation_id": str(translation.id),
+        "part_name_en": translation.part_name_en,
+        "rejection_reason": action.rejection_reason
+    }
 
 
 @router.post("/parts/{part_id}/approve")
@@ -218,12 +356,13 @@ def get_approval_summary(
         Part.approval_status == ApprovalStatus.PENDING_APPROVAL
     ).count()
     
-    # Future: Add other entity types
-    # pending_translations = db.query(Translation).filter(...).count()
+    pending_translations = db.query(PartTranslationStandardization).filter(
+        PartTranslationStandardization.approval_status == ApprovalStatus.PENDING_APPROVAL
+    ).count()
     
     return {
         "pending_parts": pending_parts,
-        "pending_translations": 0,  # Placeholder
+        "pending_translations": pending_translations,
         "pending_partners": 0,      # Placeholder
-        "total_pending": pending_parts
+        "total_pending": pending_parts + pending_translations
     }

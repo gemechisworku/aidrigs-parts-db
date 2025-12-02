@@ -48,4 +48,20 @@ export const approvalsAPI = {
         });
         return response.data;
     },
+
+    // Approve a translation
+    approveTranslation: async (translationId: string, reviewNotes?: string) => {
+        const response = await apiClient.post(`/approvals/translations/${translationId}/approve`, {
+            review_notes: reviewNotes
+        });
+        return response.data;
+    },
+
+    // Reject a translation
+    rejectTranslation: async (translationId: string, rejectionReason: string) => {
+        const response = await apiClient.post(`/approvals/translations/${translationId}/reject`, {
+            rejection_reason: rejectionReason
+        });
+        return response.data;
+    },
 };

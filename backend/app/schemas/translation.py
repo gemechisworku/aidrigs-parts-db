@@ -38,6 +38,7 @@ class TranslationUpdate(BaseModel):
 class TranslationResponse(TranslationBase):
     """Schema for translation response"""
     id: UUID
+    approval_status: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     
@@ -86,3 +87,22 @@ class TranslationFilter(BaseModel):
     drive_side_specific: Optional[str] = None
     page: int = Field(1, ge=1)
     page_size: int = Field(50, ge=1, le=100)
+
+
+class PendingTranslationResponse(BaseModel):
+    """Detailed response for pending translations"""
+    id: UUID
+    part_name_en: str
+    part_name_pr: Optional[str] = None
+    part_name_fr: Optional[str] = None
+    hs_code: Optional[str] = None
+    category_en: Optional[str] = None
+    approval_status: str
+    submitted_at: Optional[datetime] = None
+    reviewed_at: Optional[datetime] = None
+    rejection_reason: Optional[str] = None
+    created_by: Optional[UUID] = None
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True

@@ -14,6 +14,7 @@ export interface Translation {
     drive_side_specific?: 'yes' | 'no';
     alternative_names?: string;
     links?: string;
+    approval_status?: 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
     created_at: string;
     updated_at: string;
 }
