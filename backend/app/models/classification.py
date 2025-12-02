@@ -1,8 +1,10 @@
 """
 HS Code and category models
 """
-from sqlalchemy import Column, String, Text, ForeignKey
+from sqlalchemy import Column, String, Text, ForeignKey, DateTime
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+from datetime import datetime
 from app.models.base import BaseModel
 
 
@@ -16,9 +18,19 @@ class HSCode(BaseModel):
     description_pr = Column(Text)  # Portuguese
     description_pt = Column(Text)  # Portuguese (alternative)
     
+    # Approval fields
+    approval_status = Column(String(20), default="PENDING_APPROVAL", nullable=False)
+    submitted_at = Column(DateTime, default=datetime.utcnow)
+    reviewed_at = Column(DateTime, nullable=True)
+    reviewed_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    rejection_reason = Column(Text, nullable=True)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    
     # Relationships
     tariffs = relationship("HSCodeTariff", back_populates="hs_code_obj", cascade="all, delete-orphan")
     parts = relationship("PartTranslationStandardization", back_populates="hs_code_obj")
+    reviewer = relationship("User", foreign_keys=[reviewed_by])
+    creator = relationship("User", foreign_keys=[created_by])
     
     def __repr__(self):
         return f"<HSCode({self.hs_code})>"

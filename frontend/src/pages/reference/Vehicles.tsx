@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { vehiclesAPI, Vehicle, VehicleCreate, VehicleEquivalence, VehiclePartCompatibility, VehicleEquivalenceCreate, VehiclePartCompatibilityCreate } from '../../services/vehiclesApi';
+import { vehiclesAPI, Vehicle, VehicleCreate, VehicleEquivalence, VehiclePartCompatibility } from '../../services/vehiclesApi';
 import { partsAPI } from '../../services/partsApi';
 
 const Vehicles = () => {

@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { approvalsAPI, PendingPart } from '../../services/approvalsApi';
 import { translationAPI, Translation } from '../../services/translationApi';
 import { partsAPI, PartCreate, Manufacturer, Position, Category } from '../../services/partsApi';
+import { hsCodesAPI, HSCode } from '../../services/hsCodesApi';
 import CreatableSelect from '../../components/common/CreatableSelect';
 
-type EntityType = 'parts' | 'translations';
+type EntityType = 'parts' | 'translations' | 'hscodes';
 
 interface PendingTranslation extends Translation {
     submitted_at?: string;
@@ -15,6 +16,7 @@ const PendingApprovals: React.FC = () => {
     const [activeTab, setActiveTab] = useState<EntityType>('parts');
     const [pendingParts, setPendingParts] = useState<PendingPart[]>([]);
     const [pendingTranslations, setPendingTranslations] = useState<PendingTranslation[]>([]);
+    const [pendingHSCodes, setPendingHSCodes] = useState<HSCode[]>([]);
     const [loading, setLoading] = useState(false);
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
@@ -23,6 +25,7 @@ const PendingApprovals: React.FC = () => {
     const [rejectionReason, setRejectionReason] = useState('');
     const [editingPart, setEditingPart] = useState<PendingPart | null>(null);
     const [editingTranslation, setEditingTranslation] = useState<PendingTranslation | null>(null);
+    const [editingHSCode, setEditingHSCode] = useState<HSCode | null>(null);
 
     // Dropdown data
     const [manufacturers, setManufacturers] = useState<Manufacturer[]>([]);
@@ -59,10 +62,18 @@ const PendingApprovals: React.FC = () => {
         links: '',
     });
 
+    // HS Code form state
+    const [hsCodeFormData, setHSCodeFormData] = useState({
+        hs_code: '',
+        description_en: '',
+        description_pr: '',
+        description_pt: ''
+    });
+
     useEffect(() => {
         loadPendingItems();
         loadDropdownData();
-    }, [activeTab]);
+    }, []); // Load all data once on mount
 
     const loadDropdownData = async () => {
         try {
@@ -84,15 +95,16 @@ const PendingApprovals: React.FC = () => {
     const loadPendingItems = async () => {
         setLoading(true);
         try {
-            if (activeTab === 'parts') {
-                const data = await approvalsAPI.getPendingParts();
-                setPendingParts(data);
-            } else {
-                // Fetch pending translations
-                const allTranslations = await translationAPI.getTranslations({ page_size: 1000 });
-                const pending = allTranslations.items.filter(t => t.approval_status === 'PENDING_APPROVAL');
-                setPendingTranslations(pending);
-            }
+            // Load all pending items in parallel
+            const [partsData, translationsData, hsCodesData] = await Promise.all([
+                approvalsAPI.getPendingParts(),
+                translationAPI.getTranslations({ page_size: 1000 }),
+                hsCodesAPI.getHSCodes('', 0, 1000, 'PENDING_APPROVAL')
+            ]);
+
+            setPendingParts(partsData);
+            setPendingTranslations(translationsData.items.filter(t => t.approval_status === 'PENDING_APPROVAL'));
+            setPendingHSCodes(hsCodesData.items);
         } catch (error) {
             console.error('Error loading pending items:', error);
         } finally {
@@ -105,11 +117,13 @@ const PendingApprovals: React.FC = () => {
         try {
             if (type === 'parts') {
                 await approvalsAPI.approvePart(id);
-            } else {
+            } else if (type === 'translations') {
                 await approvalsAPI.approveTranslation(id);
+            } else if (type === 'hscodes') {
+                await hsCodesAPI.approveHSCode(id, { review_notes: '' });
             }
             await loadPendingItems();
-            alert(`${type === 'parts' ? 'Part' : 'Translation'} approved successfully!`);
+            alert(`${type === 'parts' ? 'Part' : type === 'translations' ? 'Translation' : 'HS Code'} approved successfully!`);
         } catch (error: any) {
             console.error('Error approving:', error);
             alert(error.response?.data?.detail || 'Failed to approve');
@@ -124,13 +138,15 @@ const PendingApprovals: React.FC = () => {
         try {
             if (activeTab === 'parts') {
                 await approvalsAPI.rejectPart(rejectingId, rejectionReason);
-            } else {
+            } else if (activeTab === 'translations') {
                 await approvalsAPI.rejectTranslation(rejectingId, rejectionReason);
+            } else if (activeTab === 'hscodes') {
+                await hsCodesAPI.rejectHSCode(rejectingId, rejectionReason);
             }
             await loadPendingItems();
             setRejectingId(null);
             setRejectionReason('');
-            alert(`${activeTab === 'parts' ? 'Part' : 'Translation'} rejected`);
+            alert(`${activeTab === 'parts' ? 'Part' : activeTab === 'translations' ? 'Translation' : 'HS Code'} rejected`);
         } catch (error: any) {
             console.error('Error rejecting:', error);
             alert(error.response?.data?.detail || 'Failed to reject');
@@ -165,8 +181,10 @@ const PendingApprovals: React.FC = () => {
     const selectAll = () => {
         if (activeTab === 'parts') {
             setSelectedItems(new Set(pendingParts.map(p => p.id)));
-        } else {
+        } else if (activeTab === 'translations') {
             setSelectedItems(new Set(pendingTranslations.map(t => t.id)));
+        } else if (activeTab === 'hscodes') {
+            setSelectedItems(new Set(pendingHSCodes.map(h => h.hs_code)));
         }
     };
 
@@ -179,19 +197,19 @@ const PendingApprovals: React.FC = () => {
             const fullPart = await partsAPI.getPart(part.id);
             setEditingPart(part);
             setPartFormData({
-                part_id: fullPart.part_id,
+                part_id: fullPart.part_id || '',
                 mfg_id: fullPart.mfg_id || '',
                 part_name_en: fullPart.part_name_en || '',
                 position_id: fullPart.position_id || '',
                 drive_side: fullPart.drive_side || 'NA',
                 designation: fullPart.designation || '',
-                moq: fullPart.moq,
-                weight: fullPart.weight,
-                width: fullPart.width,
-                length: fullPart.length,
-                height: fullPart.height,
+                moq: fullPart.moq ?? undefined,
+                weight: fullPart.weight ?? undefined,
+                width: fullPart.width ?? undefined,
+                length: fullPart.length ?? undefined,
+                height: fullPart.height ?? undefined,
                 note: fullPart.note || '',
-                image_url: fullPart.image_url || '',
+                image_url: fullPart.image_url || ''
             });
         } catch (error) {
             console.error('Error loading part details:', error);
@@ -249,9 +267,34 @@ const PendingApprovals: React.FC = () => {
         }
     };
 
+    // HS Code editing handlers
+    const handleEditHSCode = (hsCode: HSCode) => {
+        setEditingHSCode(hsCode);
+        setHSCodeFormData({
+            hs_code: hsCode.hs_code,
+            description_en: hsCode.description_en || '',
+            description_pr: hsCode.description_pr || '',
+            description_pt: hsCode.description_pt || ''
+        });
+    };
+
+    const handleSaveHSCode = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingHSCode) return;
+        try {
+            await hsCodesAPI.updateHSCode(editingHSCode.hs_code, hsCodeFormData);
+            setEditingHSCode(null);
+            await loadPendingItems();
+            alert('HS Code updated successfully');
+        } catch (error: any) {
+            alert(error.response?.data?.detail || 'Error updating HS Code');
+        }
+    };
+
     const pendingCount = {
         parts: pendingParts.length,
-        translations: pendingTranslations.length
+        translations: pendingTranslations.length,
+        hscodes: pendingHSCodes.length
     };
 
     return (
@@ -292,6 +335,20 @@ const PendingApprovals: React.FC = () => {
                                 {pendingCount.translations > 0 && (
                                     <span className="ml-2 py-0.5 px-2 rounded-full text-xs bg-red-100 text-red-600">
                                         {pendingCount.translations}
+                                    </span>
+                                )}
+                            </button>
+                            <button
+                                onClick={() => { setActiveTab('hscodes'); setSelectedItems(new Set()); }}
+                                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${activeTab === 'hscodes'
+                                    ? 'border-red-500 text-red-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                            >
+                                HS Codes
+                                {pendingCount.hscodes > 0 && (
+                                    <span className="ml-2 py-0.5 px-2 rounded-full text-xs bg-red-100 text-red-600">
+                                        {pendingCount.hscodes}
                                     </span>
                                 )}
                             </button>
@@ -499,6 +556,67 @@ const PendingApprovals: React.FC = () => {
                                 )}
                             </>
                         )}
+
+                        {activeTab === 'hscodes' && (
+                            <>
+                                {pendingHSCodes.length === 0 ? (
+                                    <div className="card text-center py-12">
+                                        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <p className="mt-2 text-gray-500">No pending HS codes to review</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                            {pendingHSCodes.map((hsCode) => (
+                                                <div key={hsCode.hs_code} className="card p-4 hover:shadow-lg transition-shadow">
+                                                    <div className="flex items-start justify-between mb-3">
+                                                        <div className="flex-1">
+                                                            <h3 className="font-bold text-lg text-gray-900">{hsCode.hs_code}</h3>
+                                                            <p className="text-sm text-gray-600 mt-1">{hsCode.description_en || 'No description'}</p>
+                                                        </div>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedItems.has(hsCode.hs_code)}
+                                                            onChange={() => toggleSelection(hsCode.hs_code)}
+                                                            className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
+                                                        />
+                                                    </div>
+
+                                                    {hsCode.description_pr && (
+                                                        <div className="text-sm text-gray-500 mb-2">
+                                                            <span className="font-medium">Portuguese:</span> {hsCode.description_pr}
+                                                        </div>
+                                                    )}
+
+                                                    <div className="pt-3 border-t grid grid-cols-3 gap-2">
+                                                        <button
+                                                            onClick={() => handleEditHSCode(hsCode)}
+                                                            className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700"
+                                                        >
+                                                            ✏️ Edit
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleApprove(hsCode.hs_code, 'hscodes')}
+                                                            className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700"
+                                                        >
+                                                            Approve
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setRejectingId(hsCode.hs_code)}
+                                                            className="px-3 py-1.5 btn-outline border-red-600 text-red-600 hover:bg-red-50 text-xs"
+                                                        >
+                                                            Reject
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+                            </>
+                        )}
                     </>
                 )}
             </div>
@@ -507,7 +625,7 @@ const PendingApprovals: React.FC = () => {
             {rejectingId && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6">
-                        <h3 className="text-lg font-bold mb-4">Reject {activeTab === 'parts' ? 'Part' : 'Translation'}</h3>
+                        <h3 className="text-lg font-bold mb-4">Reject {activeTab === 'parts' ? 'Part' : activeTab === 'translations' ? 'Translation' : 'HS Code'}</h3>
                         <p className="text-sm text-gray-600 mb-3">
                             Please provide a reason for rejection:
                         </p>
@@ -599,6 +717,10 @@ const PendingApprovals: React.FC = () => {
                                     <CreatableSelect
                                         value={partFormData.part_name_en}
                                         onChange={(value) => setPartFormData({ ...partFormData, part_name_en: value })}
+                                        onCreate={async (value: string) => {
+                                            // New translation will be created when the part is submitted
+                                            return value;
+                                        }}
                                         options={translations.map((trans) => ({
                                             value: trans.part_name_en,
                                             label: trans.part_name_en,
@@ -891,6 +1013,86 @@ const PendingApprovals: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => setEditingTranslation(null)}
+                                    className="btn-secondary"
+                                >
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn-primary">
+                                    Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* HS Code Edit Modal */}
+            {editingHSCode && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6">
+                        <h3 className="text-2xl font-bold mb-4">Edit HS Code</h3>
+                        <form onSubmit={handleSaveHSCode}>
+                            <div className="grid grid-cols-1 gap-4">
+                                {/* HS Code (disabled) */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        HS Code * (Primary Key)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={hsCodeFormData.hs_code}
+                                        disabled
+                                        className="input disabled:bg-gray-100"
+                                    />
+                                </div>
+
+                                {/* English Description */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        English Description
+                                    </label>
+                                    <textarea
+                                        value={hsCodeFormData.description_en}
+                                        onChange={(e) => setHSCodeFormData({ ...hsCodeFormData, description_en: e.target.value })}
+                                        className="input"
+                                        rows={3}
+                                        placeholder="Enter English description..."
+                                    />
+                                </div>
+
+                                {/* Portuguese Description */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Portuguese Description
+                                    </label>
+                                    <textarea
+                                        value={hsCodeFormData.description_pr}
+                                        onChange={(e) => setHSCodeFormData({ ...hsCodeFormData, description_pr: e.target.value })}
+                                        className="input"
+                                        rows={3}
+                                        placeholder="Enter Portuguese description..."
+                                    />
+                                </div>
+
+                                {/* PT Description */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        PT Description
+                                    </label>
+                                    <textarea
+                                        value={hsCodeFormData.description_pt}
+                                        onChange={(e) => setHSCodeFormData({ ...hsCodeFormData, description_pt: e.target.value })}
+                                        className="input"
+                                        rows={3}
+                                        placeholder="Enter PT description..."
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setEditingHSCode(null)}
                                     className="btn-secondary"
                                 >
                                     Cancel

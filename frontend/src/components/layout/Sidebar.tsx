@@ -262,7 +262,7 @@ const Sidebar = ({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: ()
                                     to={item.path}
                                     onClick={() => window.innerWidth < 1024 && toggleSidebar()}
                                     className={`
-                                        flex items-center space-x-3 px-3 py-2 rounded-lg mb-1
+                                        flex items-center justify-between px-3 py-2 rounded-lg mb-1
                                         text-sm font-medium transition-colors
                                         ${isActive(item.path)
                                             ? 'bg-red-600 text-white'
@@ -270,8 +270,15 @@ const Sidebar = ({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: ()
                                         }
                                     `}
                                 >
-                                    {item.icon}
-                                    <span>{item.name}</span>
+                                    <div className="flex items-center space-x-3">
+                                        {item.icon}
+                                        <span>{item.name}</span>
+                                    </div>
+                                    {item.badge && (
+                                        <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                            {item.badge}
+                                        </span>
+                                    )}
                                 </Link>
                             )}
                         </div>

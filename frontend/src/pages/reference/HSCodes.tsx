@@ -46,7 +46,7 @@ const HSCodes = () => {
         try {
             const skip = (page - 1) * pageSize;
             const [hsCodesData, countriesData] = await Promise.all([
-                hsCodesAPI.getHSCodes(search, skip, pageSize),
+                hsCodesAPI.getHSCodes(search, skip, pageSize, 'APPROVED'),
                 countriesAPI.getCountries()
             ]);
             setHSCodes(hsCodesData.items);

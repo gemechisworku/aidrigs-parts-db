@@ -15,6 +15,7 @@ interface CreatableSelectProps {
     name?: string;
     id?: string;
     required?: boolean;
+    onCreate?: (value: string) => Promise<any> | any;
 }
 
 const CreatableSelect: React.FC<CreatableSelectProps> = ({
@@ -25,7 +26,8 @@ const CreatableSelect: React.FC<CreatableSelectProps> = ({
     className = '',
     name,
     id,
-    required = false
+    required = false,
+    onCreate
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [inputValue, setInputValue] = useState(value || '');
@@ -97,7 +99,15 @@ const CreatableSelect: React.FC<CreatableSelectProps> = ({
                     {showCreateOption && (
                         <div
                             className="px-4 py-2 cursor-pointer hover:bg-blue-50 border-b border-gray-200 bg-blue-50"
-                            onClick={() => {
+                            onClick={async () => {
+                                if (onCreate) {
+                                    try {
+                                        await onCreate(inputValue);
+                                    } catch (error) {
+                                        console.error('Error creating item:', error);
+                                        return;
+                                    }
+                                }
                                 onChange(inputValue);
                                 setIsOpen(false);
                             }}

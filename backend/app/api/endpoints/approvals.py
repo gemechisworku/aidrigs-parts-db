@@ -10,6 +10,7 @@ from app.api import deps
 from app.models.part import Part
 from app.models.approval import ApprovalLog, ApprovalStatus
 from app.models.translation import PartTranslationStandardization
+from app.models.classification import HSCode
 from app.schemas.approval import (
     ApprovalAction, PendingItem, ApprovalLogResponse, 
     PendingPartResponse, ApprovalSummary
@@ -71,6 +72,26 @@ def get_pending_items(
                     "part_name_en": translation.part_name_en,
                     "part_name_pr": translation.part_name_pr,
                     "part_name_fr": translation.part_name_fr
+                }
+            })
+            
+    # Get pending HS Codes
+    if not entity_type or entity_type == "hs_code":
+        hs_codes = db.query(HSCode).filter(
+            HSCode.approval_status == ApprovalStatus.PENDING_APPROVAL
+        ).all()
+        
+        for hs_code in hs_codes:
+            pending_items.append({
+                "entity_type": "hs_code",
+                "entity_id": str(hs_code.id),
+                "entity_identifier": hs_code.hs_code,
+                "status": hs_code.approval_status,
+                "submitted_at": hs_code.submitted_at,
+                "details": {
+                    "hs_code": hs_code.hs_code,
+                    "description_en": hs_code.description_en,
+                    "description_pr": hs_code.description_pr
                 }
             })
     
@@ -360,9 +381,13 @@ def get_approval_summary(
         PartTranslationStandardization.approval_status == ApprovalStatus.PENDING_APPROVAL
     ).count()
     
+    pending_hscodes = db.query(HSCode).filter(
+        HSCode.approval_status == ApprovalStatus.PENDING_APPROVAL
+    ).count()
+    
     return {
         "pending_parts": pending_parts,
         "pending_translations": pending_translations,
         "pending_partners": 0,      # Placeholder
-        "total_pending": pending_parts + pending_translations
+        "total_pending": pending_parts + pending_translations + pending_hscodes
     }

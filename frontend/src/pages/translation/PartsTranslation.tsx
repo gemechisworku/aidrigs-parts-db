@@ -5,10 +5,13 @@
 import { useState, useEffect } from 'react';
 import { translationAPI, Translation, BulkUploadResponse } from '../../services/translationApi';
 import { partsAPI, Category } from '../../services/partsApi';
+import { hsCodesAPI, HSCode } from '../../services/hsCodesApi';
+import CreatableSelect from '../../components/common/CreatableSelect';
 
 const PartsTranslation = () => {
     const [translations, setTranslations] = useState<Translation[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
+    const [hsCodes, setHsCodes] = useState<HSCode[]>([]);
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
@@ -40,6 +43,7 @@ const PartsTranslation = () => {
     useEffect(() => {
         loadTranslations();
         loadCategories();
+        loadHSCodes();
     }, [page, search]);
 
     const loadCategories = async () => {
@@ -48,6 +52,15 @@ const PartsTranslation = () => {
             setCategories(response);
         } catch (error) {
             console.error('Error loading categories:', error);
+        }
+    };
+
+    const loadHSCodes = async () => {
+        try {
+            const response = await hsCodesAPI.getHSCodes('', 0, 1000);
+            setHsCodes(response.items);
+        } catch (error) {
+            console.error('Error loading HS codes:', error);
         }
     };
 
@@ -385,13 +398,22 @@ const PartsTranslation = () => {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         HS Code
                                     </label>
-                                    <input
-                                        type="text"
+                                    <CreatableSelect
+                                        options={hsCodes.map(code => ({ value: code.hs_code, label: `${code.hs_code}${code.description_en ? ' - ' + code.description_en : ''}` }))}
                                         value={formData.hs_code}
-                                        onChange={(e) => setFormData({ ...formData, hs_code: e.target.value })}
-                                        className="input"
-                                        maxLength={14}
-                                        placeholder="e.g., 8421.23.00"
+                                        onChange={(value) => setFormData({ ...formData, hs_code: value })}
+                                        onCreate={async (value: string) => {
+                                            try {
+                                                await hsCodesAPI.createHSCode({ hs_code: value });
+                                                // Reload HS codes to get the newly created one
+                                                await loadHSCodes();
+                                                return value;
+                                            } catch (error) {
+                                                console.error('Error creating HS code:', error);
+                                                throw error;
+                                            }
+                                        }}
+                                        placeholder="Select or create HS code..."
                                     />
                                 </div>
 

@@ -1,0 +1,20 @@
+﻿src/pages/approvals/PendingApprovals.tsx(681,41): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/Dashboard.tsx(11,12): error TS6133: 'apiStatus' is declared but its value is never read.
+src/pages/parts/PartDetailContent.tsx(12,72): error TS6133: 'onClose' is declared but its value is never read.
+src/pages/parts/PartForm.tsx(12,9): error TS2353: Object literal may only specify known properties, and 'part_number' does not exist in type 'Partial<Part> | (() => Partial<Part>)'.
+src/pages/parts/PartForm.tsx(69,43): error TS2345: Argument of type 'Partial<Part>' is not assignable to parameter of type 'PartCreate'.
+  Types of property 'part_id' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/pages/parts/PartForm.tsx(129,49): error TS2339: Property 'part_number' does not exist on type 'Partial<Part>'.
+src/pages/parts/PartForm.tsx(144,49): error TS2339: Property 'name' does not exist on type 'Partial<Part>'.
+src/pages/parts/PartForm.tsx(158,49): error TS2339: Property 'description' does not exist on type 'Partial<Part>'.
+src/pages/parts/PartForm.tsx(171,49): error TS2339: Property 'category_id' does not exist on type 'Partial<Part>'.
+src/pages/parts/PartForm.tsx(176,78): error TS2339: Property 'name' does not exist on type 'Category'.
+src/pages/parts/PartForm.tsx(189,49): error TS2551: Property 'manufacturer_id' does not exist on type 'Partial<Part>'. Did you mean 'manufacturer'?
+src/pages/parts/PartForm.tsx(194,78): error TS2339: Property 'name' does not exist on type 'Manufacturer'.
+src/pages/parts/PartForm.tsx(209,49): error TS2551: Property 'weight_kg' does not exist on type 'Partial<Part>'. Did you mean 'weight'?
+src/pages/parts/PartForm.tsx(220,51): error TS2339: Property 'is_active' does not exist on type 'Partial<Part>'.
+src/pages/parts/PartList.tsx(389,41): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.

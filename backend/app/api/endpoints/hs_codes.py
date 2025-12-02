@@ -1,5 +1,5 @@
 from typing import List, Any
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from sqlalchemy.orm import Session, joinedload
 from app.api import deps
 from app.models.classification import HSCode, HSCodeTariff
@@ -16,6 +16,8 @@ from app.schemas.hs_code import (
 import csv
 import io
 from datetime import datetime
+from app.models.approval import ApprovalStatus, ApprovalLog
+from app.schemas.approval import ApprovalAction
 
 router = APIRouter()
 
@@ -26,12 +28,17 @@ def read_hs_codes(
     db: Session = Depends(deps.get_db),
     skip: int = 0,
     limit: int = 100,
-    search: str = ""
+    search: str = "",
+    approval_status: str = Query(ApprovalStatus.APPROVED, description="Filter by approval status")
 ) -> Any:
     """
     Retrieve HS codes with pagination.
     """
     query = db.query(HSCode)
+    
+    if approval_status:
+        query = query.filter(HSCode.approval_status == approval_status)
+        
     if search:
         query = query.filter(
             (HSCode.hs_code.ilike(f"%{search}%")) |
@@ -86,7 +93,15 @@ def create_hs_code(
     if existing:
         raise HTTPException(status_code=400, detail="HS Code already exists")
     
-    hs_code = HSCode(**hs_code_in.model_dump())
+    # Safely get user ID
+    user_id = getattr(current_user, 'id', None)
+    
+    hs_code = HSCode(
+        **hs_code_in.model_dump(),
+        approval_status=ApprovalStatus.PENDING_APPROVAL,
+        submitted_at=datetime.utcnow(),
+        created_by=user_id
+    )
     db.add(hs_code)
     db.commit()
     db.refresh(hs_code)
@@ -134,6 +149,103 @@ def delete_hs_code(
     db.delete(hs_code_obj)
     db.commit()
     return hs_code_obj
+
+
+@router.post("/{hs_code}/approve")
+def approve_hs_code(
+    *,
+    db: Session = Depends(deps.get_db),
+    hs_code: str,
+    action: ApprovalAction,
+    current_user: dict = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Approve a pending HS code.
+    """
+    hs_code_obj = db.query(HSCode).filter(HSCode.hs_code == hs_code).first()
+    if not hs_code_obj:
+        raise HTTPException(status_code=404, detail="HS Code not found")
+    
+    if hs_code_obj.approval_status not in [ApprovalStatus.PENDING_APPROVAL, ApprovalStatus.REJECTED]:
+        raise HTTPException(status_code=400, detail=f"HS Code is not pending approval (current status: {hs_code_obj.approval_status})")
+    
+    old_status = hs_code_obj.approval_status
+    
+    # Update status
+    hs_code_obj.approval_status = ApprovalStatus.APPROVED
+    hs_code_obj.reviewed_at = datetime.utcnow()
+    hs_code_obj.reviewed_by = current_user.id
+    hs_code_obj.rejection_reason = None
+    
+    # Log approval
+    approval_log = ApprovalLog(
+        entity_type="hs_code",
+        entity_id=hs_code_obj.id,
+        old_status=old_status,
+        new_status=ApprovalStatus.APPROVED,
+        reviewed_by=current_user.id,
+        review_notes=action.review_notes
+    )
+    db.add(approval_log)
+    
+    db.commit()
+    db.refresh(hs_code_obj)
+    
+    return {
+        "message": "HS Code approved successfully",
+        "hs_code_id": str(hs_code_obj.id),
+        "hs_code": hs_code_obj.hs_code
+    }
+
+
+@router.post("/{hs_code}/reject")
+def reject_hs_code(
+    *,
+    db: Session = Depends(deps.get_db),
+    hs_code: str,
+    action: ApprovalAction,
+    current_user: dict = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Reject a pending HS code.
+    """
+    if not action.rejection_reason or not action.rejection_reason.strip():
+        raise HTTPException(status_code=400, detail="Rejection reason is required")
+        
+    hs_code_obj = db.query(HSCode).filter(HSCode.hs_code == hs_code).first()
+    if not hs_code_obj:
+        raise HTTPException(status_code=404, detail="HS Code not found")
+    
+    if hs_code_obj.approval_status != ApprovalStatus.PENDING_APPROVAL:
+        raise HTTPException(status_code=400, detail=f"HS Code is not pending approval (current status: {hs_code_obj.approval_status})")
+    
+    old_status = hs_code_obj.approval_status
+    
+    # Update status
+    hs_code_obj.approval_status = ApprovalStatus.REJECTED
+    hs_code_obj.reviewed_at = datetime.utcnow()
+    hs_code_obj.reviewed_by = current_user.id
+    hs_code_obj.rejection_reason = action.rejection_reason
+    
+    # Log rejection
+    approval_log = ApprovalLog(
+        entity_type="hs_code",
+        entity_id=hs_code_obj.id,
+        old_status=old_status,
+        new_status=ApprovalStatus.REJECTED,
+        reviewed_by=current_user.id,
+        review_notes=action.rejection_reason
+    )
+    db.add(approval_log)
+    
+    db.commit()
+    db.refresh(hs_code_obj)
+    
+    return {
+        "message": "HS Code rejected successfully",
+        "hs_code_id": str(hs_code_obj.id),
+        "hs_code": hs_code_obj.hs_code
+    }
 
 
 # Tariff CRUD

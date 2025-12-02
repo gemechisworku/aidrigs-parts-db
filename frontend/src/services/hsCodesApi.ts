@@ -59,8 +59,8 @@ export interface HSCodesPaginatedResponse {
 
 export const hsCodesAPI = {
     // HS Codes
-    getHSCodes: async (search = '', skip = 0, limit = 100) => {
-        const response = await apiClient.get<HSCodesPaginatedResponse>(`/hs-codes/?search=${search}&skip=${skip}&limit=${limit}`);
+    getHSCodes: async (search = '', skip = 0, limit = 100, approval_status = 'APPROVED') => {
+        const response = await apiClient.get<HSCodesPaginatedResponse>(`/hs-codes/?search=${search}&skip=${skip}&limit=${limit}&approval_status=${approval_status}`);
         return response.data;
     },
 
@@ -81,6 +81,16 @@ export const hsCodesAPI = {
 
     deleteHSCode: async (hsCode: string) => {
         const response = await apiClient.delete<HSCode>(`/hs-codes/${hsCode}`);
+        return response.data;
+    },
+
+    approveHSCode: async (hsCode: string, action: { review_notes?: string }) => {
+        const response = await apiClient.post<HSCode>(`/hs-codes/${hsCode}/approve`, action);
+        return response.data;
+    },
+
+    rejectHSCode: async (hsCode: string, rejection_reason: string) => {
+        const response = await apiClient.post<HSCode>(`/hs-codes/${hsCode}/reject`, { rejection_reason });
         return response.data;
     },
 
