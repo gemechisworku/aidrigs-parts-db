@@ -46,7 +46,16 @@ class PartBase(BaseModel):
 
 class PartCreate(PartBase):
     """Schema for creating a new part"""
-    pass
+    from pydantic import field_validator
+    
+    @field_validator('mfg_id', 'position_id', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v):
+        """Convert empty strings to None for UUID fields"""
+        if v == '' or v is None:
+            return None
+        return v
+
 
 class PartUpdate(BaseModel):
     """Schema for updating a part - all fields optional except part_id cannot be changed"""

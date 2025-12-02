@@ -149,11 +149,15 @@ def create_part(
             if not pending_translation:
                 # Auto-create new translation with pending approval
                 logger.info(f"Auto-creating translation '{part_in.part_name_en}' with pending approval status")
+                
+                # Safely get user ID
+                user_id = getattr(current_user, 'id', None)
+                
                 new_translation = PartTranslationStandardization(
                     part_name_en=part_in.part_name_en,
                     approval_status=ApprovalStatus.PENDING_APPROVAL,
                     submitted_at=datetime.utcnow(),
-                    created_by=current_user.id
+                    created_by=user_id
                 )
                 db.add(new_translation)
                 db.flush()  # Get ID without full commit

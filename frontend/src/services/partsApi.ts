@@ -2,7 +2,7 @@ import apiClient from './api';
 import { Category, Manufacturer, Part, PartCreate, PartFilters, PartListResponse, Position } from '../types/parts';
 
 // Re-export types for convenience
-export type { Category, Manufacturer, Part, PartFilters, Position };
+export type { Category, Manufacturer, Part, PartCreate, PartFilters, Position };
 
 export const partsAPI = {
     // Categories
