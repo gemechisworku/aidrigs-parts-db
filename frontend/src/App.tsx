@@ -30,6 +30,7 @@ import MyRequests from './pages/requests/MyRequests';
 import Roles from './pages/admin/Roles';
 import Permissions from './pages/admin/Permissions';
 import Configs from './pages/admin/Configs';
+import AuditLogs from './pages/admin/AuditLogs';
 import QuotesList from './pages/quotes/QuotesList';
 
 // Reference Data pages
@@ -114,6 +115,7 @@ function App() {
                         <Route path="/admin/permissions" element={<Permissions />} />
                         <Route path="/admin/configs" element={<Configs />} />
                         <Route path="/admin/approvals" element={<PendingApprovals />} />
+                        <Route path="/admin/audit-logs" element={<AuditLogs />} />
 
                         {/* Quotes */}
                         <Route path="/quotes" element={<QuotesList />} />

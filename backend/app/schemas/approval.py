@@ -43,6 +43,7 @@ class ApprovalLogResponse(BaseModel):
     id: UUID4
     entity_type: str
     entity_id: UUID4
+    entity_identifier: Optional[str] = None
     old_status: Optional[ApprovalStatus] = None
     new_status: ApprovalStatus
     reviewed_by: UUID4

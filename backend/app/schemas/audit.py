@@ -9,6 +9,7 @@ class AuditLogResponse(BaseModel):
     action: str
     entity_type: str
     entity_id: Optional[UUID4] = None
+    entity_identifier: Optional[str] = None
     changes: Optional[dict] = None
     ip_address: Optional[str] = None
     user_agent: Optional[str] = None

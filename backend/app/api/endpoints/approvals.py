@@ -344,6 +344,8 @@ def get_approval_logs(
     db: Session = Depends(deps.get_db),
     entity_type: Optional[str] = None,
     entity_id: Optional[str] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
     skip: int = 0,
     limit: int = 100,
     current_user = Depends(deps.get_current_active_user),
@@ -358,10 +360,39 @@ def get_approval_logs(
     
     if entity_id:
         query = query.filter(ApprovalLog.entity_id == entity_id)
+
+    if start_date:
+        query = query.filter(ApprovalLog.created_at >= start_date)
+    
+    if end_date:
+        query = query.filter(ApprovalLog.created_at <= end_date)
     
     logs = query.order_by(ApprovalLog.created_at.desc()).offset(skip).limit(limit).all()
     
-    return logs
+    # Populate entity identifiers
+    result = []
+    for log in logs:
+        log_data = ApprovalLogResponse.model_validate(log).model_dump()
+        
+        identifier = None
+        entity_type = log.entity_type.lower()
+        if entity_type in ["part", "parts"]:
+            part = db.query(Part).filter(Part.id == log.entity_id).first()
+            if part:
+                identifier = part.part_id
+        elif entity_type in ["translation", "translations"]:
+            trans = db.query(PartTranslationStandardization).filter(PartTranslationStandardization.id == log.entity_id).first()
+            if trans:
+                identifier = trans.part_name_en
+        elif entity_type in ["hs_code", "hscode", "hs_codes"]:
+            hs = db.query(HSCode).filter(HSCode.id == log.entity_id).first()
+            if hs:
+                identifier = hs.hs_code
+                
+        log_data["entity_identifier"] = identifier
+        result.append(log_data)
+    
+    return result
 
 
 @router.get("/summary", response_model=ApprovalSummary)
