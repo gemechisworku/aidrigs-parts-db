@@ -131,3 +131,34 @@ def read_audit_logs(
         "pages": ceil(total / page_size) if total > 0 else 1,
         "page_size": page_size
     }
+
+
+@router.get("/meta", response_model=dict)
+def get_audit_logs_meta(
+    db: Session = Depends(deps.get_db),
+    current_user = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Get metadata for audit logs (e.g., oldest log date)
+    """
+    from sqlalchemy import func
+    from app.models.workflow import ApprovalLog
+    
+    # Get oldest date from system logs
+    oldest_system = db.query(func.min(AuditLog.created_at)).scalar()
+    
+    # Get oldest date from approval logs
+    oldest_approval = db.query(func.min(ApprovalLog.created_at)).scalar()
+    
+    # Determine overall oldest date
+    oldest_date = None
+    if oldest_system and oldest_approval:
+        oldest_date = min(oldest_system, oldest_approval)
+    elif oldest_system:
+        oldest_date = oldest_system
+    elif oldest_approval:
+        oldest_date = oldest_approval
+        
+    return {
+        "oldest_date": oldest_date
+    }

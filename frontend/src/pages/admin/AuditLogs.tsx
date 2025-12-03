@@ -8,11 +8,28 @@ const AuditLogs = () => {
     const [dateFilter, setDateFilter] = useState<string>('all');
     const [customStartDate, setCustomStartDate] = useState<string>('');
     const [customEndDate, setCustomEndDate] = useState<string>('');
+    const [minDate, setMinDate] = useState<string>('');
     const [selectedLog, setSelectedLog] = useState<UnifiedLog | null>(null);
+
+    useEffect(() => {
+        loadMetadata();
+    }, []);
 
     useEffect(() => {
         loadLogs();
     }, [filterType, dateFilter, customStartDate, customEndDate]);
+
+    const loadMetadata = async () => {
+        try {
+            const meta = await auditLogsAPI.getLogMetadata();
+            if (meta.oldest_date) {
+                // Format as YYYY-MM-DD for input min attribute
+                setMinDate(meta.oldest_date.split('T')[0]);
+            }
+        } catch (error) {
+            console.error('Error loading metadata:', error);
+        }
+    };
 
     const loadLogs = async () => {
         setLoading(true);
@@ -58,6 +75,24 @@ const AuditLogs = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newDate = e.target.value;
+        if (customEndDate && newDate > customEndDate) {
+            alert("Start date cannot be after end date");
+            return;
+        }
+        setCustomStartDate(newDate);
+    };
+
+    const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newDate = e.target.value;
+        if (customStartDate && newDate < customStartDate) {
+            alert("End date cannot be before start date");
+            return;
+        }
+        setCustomEndDate(newDate);
     };
 
     const getActionColor = (action: string, status?: string) => {
@@ -163,14 +198,18 @@ const AuditLogs = () => {
                             <input
                                 type="date"
                                 value={customStartDate}
-                                onChange={(e) => setCustomStartDate(e.target.value)}
+                                onChange={handleStartDateChange}
+                                max={new Date().toISOString().split('T')[0]}
+                                min={minDate}
                                 className="input w-32"
                             />
                             <span className="text-gray-400">-</span>
                             <input
                                 type="date"
                                 value={customEndDate}
-                                onChange={(e) => setCustomEndDate(e.target.value)}
+                                onChange={handleEndDateChange}
+                                max={new Date().toISOString().split('T')[0]}
+                                min={minDate}
                                 className="input w-32"
                             />
                         </div>

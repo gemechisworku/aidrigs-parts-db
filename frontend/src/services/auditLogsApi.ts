@@ -160,5 +160,11 @@ export const auditLogsAPI = {
             console.error("Error fetching audit logs:", error);
             throw error;
         }
+    },
+
+    // Fetch Metadata (e.g. oldest log date)
+    getLogMetadata: async (): Promise<{ oldest_date: string | null }> => {
+        const response = await apiClient.get('/audit-logs/meta');
+        return response.data;
     }
 };
