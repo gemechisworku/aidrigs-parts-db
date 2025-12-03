@@ -542,3 +542,74 @@ def bulk_create_equivalences(
         "errors": errors,
         "auto_created_parts": auto_created_parts
     }
+
+
+@router.get("/suggestions/{part_name_en}")
+def get_dimension_suggestions(
+    part_name_en: str,
+    db: Session = Depends(deps.get_db),
+    current_user = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Get dimension suggestions for a part based on existing parts with the same part_name_en.
+    Returns all similar parts sorted by volumetric ratio (smallest first).
+    Volumetric ratio = (length × width × height) / weight
+    """
+    from app.models.approval import ApprovalStatus
+    from decimal import Decimal
+    
+    # Query approved parts with matching part_name_en that have valid dimensions
+    parts = db.query(Part).filter(
+        Part.part_name_en == part_name_en,
+        Part.approval_status == ApprovalStatus.APPROVED,
+        Part.deleted_at.is_(None),
+        Part.length.isnot(None),
+        Part.width.isnot(None),
+        Part.height.isnot(None),
+        Part.weight.isnot(None),
+        Part.length > 0,
+        Part.width > 0,
+        Part.height > 0,
+        Part.weight > 0
+    ).options(
+        joinedload(Part.manufacturer)
+    ).all()
+    
+    if not parts:
+        return {
+            "suggestions": [],
+            "count": 0
+        }
+    
+    # Calculate volumetric ratio for each part and prepare response
+    suggestions = []
+    for part in parts:
+        # Convert Decimal to float for calculation
+        length = float(part.length)
+        width = float(part.width)
+        height = float(part.height)
+        weight = float(part.weight)
+        
+        # Calculate volumetric ratio
+        volumetric_ratio = (length * width * height) / weight
+        
+        suggestions.append({
+            "part_id": part.part_id,
+            "designation": part.designation,
+            "manufacturer_name": part.manufacturer.mfg_name if part.manufacturer else None,
+            "length": length,
+            "width": width,
+            "height": height,
+            "weight": weight,
+            "moq": part.moq,
+            "volumetric_ratio": round(volumetric_ratio, 2)
+        })
+    
+    # Sort by volumetric ratio (smallest first = most compact)
+    suggestions.sort(key=lambda x: x["volumetric_ratio"])
+    
+    return {
+        "suggestions": suggestions,
+        "count": len(suggestions),
+        "recommended": suggestions[0] if suggestions else None  # First one is recommended
+    }

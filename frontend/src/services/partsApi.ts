@@ -92,4 +92,17 @@ export const partsAPI = {
         });
         return response.data;
     },
+
+    // Dimension Suggestions
+    getDimensionSuggestions: async (partNameEn: string) => {
+        try {
+            const response = await apiClient.get(`/parts/suggestions/${encodeURIComponent(partNameEn)}`);
+            return response.data;
+        } catch (error: any) {
+            if (error.response?.status === 404 || error.response?.data?.count === 0) {
+                return { suggestions: [], count: 0, recommended: null };
+            }
+            throw error;
+        }
+    },
 };

@@ -45,6 +45,12 @@ const PartsList = () => {
         image_url: '',
     });
 
+    // Dimension suggestions state
+    const [dimensionSuggestions, setDimensionSuggestions] = useState<any[]>([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+    const [autoFilledFrom, setAutoFilledFrom] = useState<string | null>(null);
+
     useEffect(() => {
         loadParts();
         loadDropdownData();
@@ -118,6 +124,66 @@ const PartsList = () => {
             image_url: '',
         });
         setEditingPart(null);
+        setDimensionSuggestions([]);
+        setAutoFilledFrom(null);
+        setShowSuggestions(false);
+    };
+
+    // Fetch dimension suggestions when part_name_en changes
+    useEffect(() => {
+        let timeoutId: number;
+
+        const fetchSuggestions = async () => {
+            if (formData.part_name_en && !editingPart) {
+                setLoadingSuggestions(true);
+                try {
+                    const result = await partsAPI.getDimensionSuggestions(formData.part_name_en);
+                    if (result.count > 0) {
+                        setDimensionSuggestions(result.suggestions);
+                        // Auto-fill with recommended (smallest volumetric ratio)
+                        if (result.recommended) {
+                            setFormData(prev => ({
+                                ...prev,
+                                length: result.recommended.length,
+                                width: result.recommended.width,
+                                height: result.recommended.height,
+                                weight: result.recommended.weight,
+                                moq: result.recommended.moq,
+                            }));
+                            setAutoFilledFrom(result.recommended.part_id);
+                        }
+                    } else {
+                        setDimensionSuggestions([]);
+                        setAutoFilledFrom(null);
+                    }
+                } catch (error) {
+                    console.error('Error fetching suggestions:', error);
+                } finally {
+                    setLoadingSuggestions(false);
+                }
+            } else {
+                setDimensionSuggestions([]);
+                setAutoFilledFrom(null);
+            }
+        };
+
+        // Debounce API call by 500ms
+        timeoutId = setTimeout(fetchSuggestions, 500);
+
+        return () => clearTimeout(timeoutId);
+    }, [formData.part_name_en, editingPart]);
+
+    const handleSelectSuggestion = (suggestion: any) => {
+        setFormData(prev => ({
+            ...prev,
+            length: suggestion.length,
+            width: suggestion.width,
+            height: suggestion.height,
+            weight: suggestion.weight,
+            moq: suggestion.moq,
+        }));
+        setAutoFilledFrom(suggestion.part_id);
+        setShowSuggestions(false);
     };
 
     const handleEdit = (part: Part) => {
@@ -400,40 +466,79 @@ const PartsList = () => {
                                     />
                                 </div>
 
-                                {/* Position */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Position
-                                    </label>
-                                    <select
-                                        value={formData.position_id}
-                                        onChange={(e) => setFormData({ ...formData, position_id: e.target.value })}
-                                        className="input"
-                                    >
-                                        <option value="">-- Select Position --</option>
-                                        {positions.map((pos) => (
-                                            <option key={pos.id} value={pos.id}>
-                                                {pos.position_en}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
+                                {/* Auto-fill Indicator and Manual Selection */}
+                                {!editingPart && formData.part_name_en && (
+                                    <div className="col-span-2">
+                                        {loadingSuggestions ? (
+                                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                                                <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                                                <span>Searching for similar parts...</span>
+                                            </div>
+                                        ) : autoFilledFrom ? (
+                                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex items-start gap-2">
+                                                        <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        <div>
+                                                            <p className="text-sm font-medium text-blue-900">
+                                                                Dimensions auto-filled from: <span className="font-bold">{autoFilledFrom}</span>
+                                                            </p>
+                                                            {dimensionSuggestions.length > 1 && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setShowSuggestions(!showSuggestions)}
+                                                                    className="text-xs text-blue-700 hover:text-blue-800 underline mt-1"
+                                                                >
+                                                                    {showSuggestions ? 'Hide' : 'View'} {dimensionSuggestions.length - 1} other similar part{dimensionSuggestions.length > 2 ? 's' : ''}
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
 
-                                {/* Drive Side */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Drive Side
-                                    </label>
-                                    <select
-                                        value={formData.drive_side}
-                                        onChange={(e) => setFormData({ ...formData, drive_side: e.target.value as 'NA' | 'LHD' | 'RHD' })}
-                                        className="input"
-                                    >
-                                        <option value="NA">NA</option>
-                                        <option value="LHD">LHD (Left Hand Drive)</option>
-                                        <option value="RHD">RHD (Right Hand Drive)</option>
-                                    </select>
-                                </div>
+                                                {/* Manual Selection Dropdown */}
+                                                {showSuggestions && dimensionSuggestions.length > 0 && (
+                                                    <div className="mt-3 max-h-60 overflow-y-auto border-t border-blue-200 pt-3">
+                                                        <p className="text-xs font-medium text-gray-700 mb-2">Select a different part:</p>
+                                                        <div className="space-y-2">
+                                                            {dimensionSuggestions.map((suggestion, idx) => (
+                                                                <div
+                                                                    key={idx}
+                                                                    onClick={() => handleSelectSuggestion(suggestion)}
+                                                                    className={`cursor-pointer p-3 rounded border transition-colors ${suggestion.part_id === autoFilledFrom
+                                                                        ? 'bg-blue-100 border-blue-300'
+                                                                        : 'bg-white border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                                                                        }`}
+                                                                >
+                                                                    <div className="flex justify-between items-start">
+                                                                        <div>
+                                                                            <p className="text-sm font-semibold text-gray-900">{suggestion.part_id}</p>
+                                                                            {suggestion.designation && (
+                                                                                <p className="text-xs text-gray-600">{suggestion.designation}</p>
+                                                                            )}
+                                                                            {suggestion.manufacturer_name && (
+                                                                                <p className="text-xs text-gray-500">Mfg: {suggestion.manufacturer_name}</p>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="text-right text-xs">
+                                                                            <p className="text-gray-700">
+                                                                                {suggestion.length}×{suggestion.width}×{suggestion.height} cm
+                                                                            </p>
+                                                                            <p className="text-gray-700">{suggestion.weight} kg</p>
+                                                                            <p className="text-gray-500">Ratio: {suggestion.volumetric_ratio}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                )}
 
                                 {/* MOQ */}
                                 <div>
