@@ -22,6 +22,9 @@ const PartsTranslation = () => {
     const [showFormModal, setShowFormModal] = useState(false);
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [editingTranslation, setEditingTranslation] = useState<Translation | null>(null);
+    const [allTranslations, setAllTranslations] = useState<Translation[]>([]);
+    const [targetTranslationId, setTargetTranslationId] = useState<string | null>(null);
+    const [mergeWarning, setMergeWarning] = useState<string | null>(null);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -45,6 +48,19 @@ const PartsTranslation = () => {
         loadCategories();
         loadHSCodes();
     }, [page, search]);
+
+    useEffect(() => {
+        loadAllTranslations();
+    }, []);
+
+    const loadAllTranslations = async () => {
+        try {
+            const data = await translationAPI.getTranslations({ page_size: 10000 });
+            setAllTranslations(data.items);
+        } catch (error) {
+            console.error('Error loading all translations:', error);
+        }
+    };
 
     const loadCategories = async () => {
         try {
@@ -82,6 +98,29 @@ const PartsTranslation = () => {
         }
     };
 
+    const handleNameChange = (name: string) => {
+        const existing = allTranslations.find(t => t.part_name_en.toLowerCase() === name.toLowerCase());
+
+        if (existing) {
+            setTargetTranslationId(existing.id);
+            setFormData({
+                part_name_en: existing.part_name_en,
+                part_name_pr: existing.part_name_pr || '',
+                part_name_fr: existing.part_name_fr || '',
+                hs_code: existing.hs_code || '',
+                category_en: existing.category_en || '',
+                drive_side_specific: existing.drive_side_specific || 'no',
+                alternative_names: existing.alternative_names || '',
+                links: existing.links || '',
+            });
+            setMergeWarning(`Warning: "${existing.part_name_en}" already exists. Saving will update the existing record${editingTranslation ? ' and remove this one' : ''}.`);
+        } else {
+            setTargetTranslationId(null);
+            setFormData(prev => ({ ...prev, part_name_en: name }));
+            setMergeWarning(null);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -95,14 +134,29 @@ const PartsTranslation = () => {
             if (formData.links) cleanData.links = formData.links;
             cleanData.drive_side_specific = formData.drive_side_specific;
 
-            if (editingTranslation) {
-                await translationAPI.updateTranslation(editingTranslation.id, cleanData);
+            if (targetTranslationId) {
+                // Merge logic
+                await translationAPI.updateTranslation(targetTranslationId, cleanData);
+
+                // If we were editing a DIFFERENT translation, delete the old one
+                if (editingTranslation && editingTranslation.id !== targetTranslationId) {
+                    await translationAPI.deleteTranslation(editingTranslation.id);
+                    alert(`Merged into "${formData.part_name_en}" successfully.`);
+                } else {
+                    alert('Translation updated successfully');
+                }
             } else {
-                await translationAPI.createTranslation(cleanData);
+                if (editingTranslation) {
+                    await translationAPI.updateTranslation(editingTranslation.id, cleanData);
+                } else {
+                    await translationAPI.createTranslation(cleanData);
+                }
             }
+
             setShowFormModal(false);
             resetForm();
             loadTranslations();
+            loadAllTranslations();
         } catch (error: any) {
             alert(error.response?.data?.detail || 'Error saving translation');
         }
@@ -120,6 +174,8 @@ const PartsTranslation = () => {
             links: '',
         });
         setEditingTranslation(null);
+        setTargetTranslationId(null);
+        setMergeWarning(null);
     };
 
     const handleDelete = async (id: string) => {
@@ -127,6 +183,7 @@ const PartsTranslation = () => {
         try {
             await translationAPI.deleteTranslation(id);
             loadTranslations();
+            loadAllTranslations();
         } catch (error) {
             alert('Error deleting translation');
         }
@@ -134,6 +191,8 @@ const PartsTranslation = () => {
 
     const handleEdit = (translation: Translation) => {
         setEditingTranslation(translation);
+        setTargetTranslationId(null);
+        setMergeWarning(null);
         setFormData({
             part_name_en: translation.part_name_en,
             part_name_pr: translation.part_name_pr || '',
@@ -162,6 +221,7 @@ const PartsTranslation = () => {
             setUploadResult(result);
             if (result.success_count > 0) {
                 loadTranslations();
+                loadAllTranslations();
             }
         } catch (error: any) {
             alert(error.response?.data?.detail || 'Error uploading CSV');
@@ -332,6 +392,13 @@ const PartsTranslation = () => {
                         <h2 className="text-2xl font-bold mb-4">
                             {editingTranslation ? 'Edit Translation' : 'Add Translation'}
                         </h2>
+
+                        {mergeWarning && (
+                            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm">
+                                {mergeWarning}
+                            </div>
+                        )}
+
                         <form onSubmit={handleSubmit}>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {/* Part Names */}
@@ -339,14 +406,13 @@ const PartsTranslation = () => {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         English Name * (Primary Key)
                                     </label>
-                                    <input
-                                        type="text"
+                                    <CreatableSelect
+                                        options={allTranslations.map(t => ({ value: t.part_name_en, label: t.part_name_en }))}
                                         value={formData.part_name_en}
-                                        onChange={(e) => setFormData({ ...formData, part_name_en: e.target.value })}
+                                        onChange={handleNameChange}
+                                        placeholder="Select or create English name..."
                                         required
-                                        disabled={!!editingTranslation}
-                                        className="input disabled:bg-gray-100"
-                                        maxLength={60}
+                                        allowCreateOption={false}
                                     />
                                 </div>
                                 <div>

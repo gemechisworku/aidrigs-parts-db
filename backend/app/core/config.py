@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     LOG_LEVEL: str = "INFO"
     
+    # Webhook Settings
+    EXTRACTED_QUOTES_WEBHOOK_URL: str = "https://n8n.dev.tas.coopaifoundry.com/webhook/upload-file"
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=True,

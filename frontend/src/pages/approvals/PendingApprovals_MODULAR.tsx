@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { EntityType, TabConfig } from './types';
-import { approvalsAPI } from '../../services/approvalsApi';
 import { PartsApprovalsTab } from './components/tabs/PartsApprovalsTab';
 import { TranslationsApprovalsTab } from './components/tabs/TranslationsApprovalsTab';
 import { HSCodesApprovalsTab } from './components/tabs/HSCodesApprovalsTab';
@@ -26,26 +25,6 @@ const PendingApprovals: React.FC = () => {
         ports: 0
     });
 
-    // Load approval summary on mount to show badge counts immediately
-    useEffect(() => {
-        loadApprovalSummary();
-    }, []);
-
-    const loadApprovalSummary = async () => {
-        try {
-            const summary = await approvalsAPI.getSummary();
-            setTabCounts({
-                parts: summary.pending_parts || 0,
-                translations: summary.pending_translations || 0,
-                hscodes: summary.pending_hscodes || 0,
-                manufacturers: summary.pending_manufacturers || 0,
-                ports: summary.pending_ports || 0
-            });
-        } catch (error) {
-            console.error('Error loading approval summary:', error);
-        }
-    };
-
     const updateCount = (tab: EntityType, count: number) => {
         setTabCounts(prev => ({ ...prev, [tab]: count }));
     };
@@ -70,8 +49,8 @@ const PendingApprovals: React.FC = () => {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${activeTab === tab.id
-                                        ? 'border-red-500 text-red-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                            ? 'border-red-500 text-red-600'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                         }`}
                                 >
                                     {tab.label}
@@ -92,7 +71,6 @@ const PendingApprovals: React.FC = () => {
                         <ActiveComponent
                             isActive={true}
                             onCountChange={(count) => updateCount(activeTab, count)}
-                            onRefreshNeeded={loadApprovalSummary}
                         />
                     )}
                 </div>

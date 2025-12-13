@@ -30,11 +30,23 @@ const Sidebar = ({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: ()
                 console.error('Failed to load approval summary:', error);
             }
         };
+
         loadPendingCount();
 
-        // Refresh every 30 seconds
-        const interval = setInterval(loadPendingCount, 30000);
-        return () => clearInterval(interval);
+        // Listen for approval count changes
+        const handleApprovalChange = () => {
+            loadPendingCount();
+        };
+
+        window.addEventListener('approvalCountChanged', handleApprovalChange);
+
+        // Also refresh every 60 seconds as fallback
+        const interval = setInterval(loadPendingCount, 60000);
+
+        return () => {
+            window.removeEventListener('approvalCountChanged', handleApprovalChange);
+            clearInterval(interval);
+        };
     }, []);
 
     const toggleMenu = (menuName: string) => {
@@ -146,6 +158,17 @@ const Sidebar = ({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: ()
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
             ),
+            children: [
+                {
+                    name: 'Cost Quotes',
+                    path: '/quotes/extracted',
+                    icon: (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    ),
+                },
+            ],
         },
     ];
 

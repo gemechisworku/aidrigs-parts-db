@@ -6,7 +6,6 @@ from decimal import Decimal
 # Nested response models for relationships
 class ManufacturerNested(BaseModel):
     id: UUID4
-    mfg_id: str
     mfg_name: str
     
     class Config:

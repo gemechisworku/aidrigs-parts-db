@@ -149,46 +149,68 @@ async def update_translation(
     current_user = Depends(deps.get_current_active_user),
 ):
     """
-    Update an existing translation (cannot update part_name_en as it's the primary key)
+    Update an existing translation
     """
-    translation = db.query(PartTranslationStandardization).filter(
-        PartTranslationStandardization.id == translation_id
-    ).first()
-    
-    if not translation:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Translation not found"
-        )
-    
-    # Update fields
-    update_data = translation_update.dict(exclude_unset=True)
-    
-    # Validate category_en exists if provided
-    if "category_en" in update_data and update_data["category_en"]:
-        category = db.query(Category).filter(Category.category_name_en == update_data["category_en"]).first()
-        if not category:
+    """
+    Update an existing translation
+    """
+    try:
+        translation = db.query(PartTranslationStandardization).filter(
+            PartTranslationStandardization.id == translation_id
+        ).first()
+        
+        if not translation:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Category '{update_data['category_en']}' not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Translation not found"
             )
-    
-    # Validate hs_code exists if provided
-    if "hs_code" in update_data and update_data["hs_code"]:
-        hs_code = db.query(HSCode).filter(HSCode.hs_code == update_data["hs_code"]).first()
-        if not hs_code:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"HS Code '{update_data['hs_code']}' not found"
-            )
-    
-    for field, value in update_data.items():
-        setattr(translation, field, value)
-    
-    db.commit()
-    db.refresh(translation)
-    
-    return translation
+        
+        # Update fields
+        update_data = translation_update.dict(exclude_unset=True)
+
+        # Check for duplicate part_name_en if it's being updated
+        if "part_name_en" in update_data:
+            existing = db.query(PartTranslationStandardization).filter(
+                PartTranslationStandardization.part_name_en == update_data["part_name_en"],
+                PartTranslationStandardization.id != translation_id
+            ).first()
+            if existing:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Translation with part_name_en '{update_data['part_name_en']}' already exists"
+                )
+        
+        # Validate category_en exists if provided
+        if "category_en" in update_data and update_data["category_en"]:
+            category = db.query(Category).filter(Category.category_name_en == update_data["category_en"]).first()
+            if not category:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Category '{update_data['category_en']}' not found"
+                )
+        
+        # Validate hs_code exists if provided
+        if "hs_code" in update_data and update_data["hs_code"]:
+            hs_code = db.query(HSCode).filter(HSCode.hs_code == update_data["hs_code"]).first()
+            if not hs_code:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"HS Code '{update_data['hs_code']}' not found"
+                )
+        
+        for field, value in update_data.items():
+            setattr(translation, field, value)
+        
+        db.commit()
+        db.refresh(translation)
+        
+        return translation
+    except Exception as e:
+        import traceback
+        with open("debug_error.log", "w") as f:
+            f.write(f"Error in update_translation: {str(e)}\n")
+            traceback.print_exc(file=f)
+        raise e
 
 
 @router.delete("/{translation_id}", status_code=status.HTTP_204_NO_CONTENT)

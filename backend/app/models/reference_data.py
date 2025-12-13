@@ -1,7 +1,7 @@
 """
 Reference Data Models: Ports, Price Tiers, and more
 """
-from sqlalchemy import Column, String, Enum as SQLEnum, TIMESTAMP, UUID, Numeric, ForeignKey
+from sqlalchemy import Column, String, Text, Enum as SQLEnum, TIMESTAMP, UUID, Numeric, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -26,11 +26,23 @@ class Port(Base):
     country = Column(String(2), ForeignKey("countries.code"))
     city = Column(String(60))
     type = Column("port_type", String(4))
+    
+    # Approval fields
+    approval_status = Column(String(50), default="PENDING_APPROVAL", nullable=False)
+    submitted_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), default=func.now())
+    reviewed_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    reviewed_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    rejection_reason = Column(Text, nullable=True)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    
+    # Timestamps
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now(), default=func.now())
     
-    # Relationship
+    # Relationships
     country_details = relationship("Country", backref="ports")
+    reviewer = relationship("User", foreign_keys=[reviewed_by])
+    creator = relationship("User", foreign_keys=[created_by])
 
 
 class PriceTier(Base):

@@ -59,7 +59,7 @@ const PartsList = () => {
     const loadDropdownData = async () => {
         try {
             const [mfgs, trans, pos] = await Promise.all([
-                partsAPI.getManufacturers(),
+                partsAPI.getManufacturers(true),
                 translationAPI.getTranslations({ page: 1, page_size: 1000 }),
                 partsAPI.getPositions(),
             ]);
@@ -93,6 +93,14 @@ const PartsList = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validate mfg_id is a UUID if present (prevents submitting typed names that weren't created)
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (formData.mfg_id && !uuidRegex.test(formData.mfg_id)) {
+            alert('Please select a valid manufacturer from the list or create a new one using the "Create" option.');
+            return;
+        }
+
         try {
             if (editingPart) {
                 await partsAPI.updatePart(editingPart.id, formData);
@@ -103,6 +111,7 @@ const PartsList = () => {
             resetForm();
             loadParts();
         } catch (error: any) {
+            console.error('Error saving part:', error);
             alert(error.response?.data?.detail || 'Error saving part');
         }
     };
@@ -432,18 +441,68 @@ const PartsList = () => {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Manufacturer
                                     </label>
-                                    <select
-                                        value={formData.mfg_id}
-                                        onChange={(e) => setFormData({ ...formData, mfg_id: e.target.value })}
+                                    <CreatableSelect
+                                        value={(() => {
+                                            // If mfg_id is set, find the manufacturer and return its name, otherwise return empty
+                                            if (formData.mfg_id) {
+                                                const selectedMfg = manufacturers.find(m => m.id === formData.mfg_id);
+                                                return selectedMfg ? selectedMfg.mfg_name : formData.mfg_id;
+                                            }
+                                            return '';
+                                        })()}
+                                        onChange={(value) => {
+                                            // Check if the value matches a manufacturer name
+                                            const matchingMfg = manufacturers.find(m =>
+                                                m.mfg_name === value || m.id === value
+                                            );
+                                            setFormData({
+                                                ...formData,
+                                                mfg_id: matchingMfg ? matchingMfg.id : value
+                                            });
+                                        }}
+                                        options={manufacturers.map((mfg) => ({
+                                            value: mfg.mfg_name,
+                                            label: mfg.mfg_name,
+                                            isPending: mfg.approval_status === 'PENDING_APPROVAL'
+                                        }))}
+                                        onCreate={async (newMfgName) => {
+                                            try {
+                                                const newMfg = await partsAPI.createManufacturer({
+                                                    mfg_name: newMfgName.trim(),
+                                                    mfg_type: 'OEM', // Default type
+                                                    certification: null
+                                                });
+                                                // Reload manufacturers to include the new one
+                                                const mfgs = await partsAPI.getManufacturers(true);
+                                                setManufacturers(mfgs);
+
+                                                setFormData({ ...formData, mfg_id: newMfg.id });
+                                                alert(`Manufacturer "${newMfgName}" submitted for approval!`);
+                                            } catch (error: any) {
+                                                // Handle "already exists" error
+                                                if (error.response?.status === 400 && error.response?.data?.detail?.includes('already exists')) {
+                                                    // Reload manufacturers to ensure we have the latest list (including pending)
+                                                    const mfgs = await partsAPI.getManufacturers(true);
+                                                    setManufacturers(mfgs);
+
+                                                    // Find the existing manufacturer
+                                                    const existing = mfgs.find(m => m.mfg_name.toLowerCase() === newMfgName.trim().toLowerCase());
+                                                    if (existing) {
+                                                        setFormData({ ...formData, mfg_id: existing.id });
+                                                        alert(`Manufacturer "${existing.mfg_name}" already exists. Selected it.`);
+                                                        return;
+                                                    }
+                                                }
+
+                                                console.error('Error creating manufacturer:', error);
+                                                throw new Error(error.response?.data?.detail || 'Failed to create manufacturer');
+                                            }
+                                        }}
+                                        placeholder="Select or type manufacturer name..."
                                         className="input"
-                                    >
-                                        <option value="">-- Select Manufacturer --</option>
-                                        {manufacturers.map((mfg) => (
-                                            <option key={mfg.id} value={mfg.id}>
-                                                {mfg.mfg_name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        name="mfg_id"
+                                        id="mfg_id"
+                                    />
                                 </div>
 
                                 {/* Part Name (Translation) */}

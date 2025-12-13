@@ -3,20 +3,20 @@ import apiClient from './api';
 export interface HSCode {
     hs_code: string;
     description_en?: string;
-    description_pr?: string;
+    description_fr?: string;
     description_pt?: string;
 }
 
 export interface HSCodeCreate {
     hs_code: string;
     description_en?: string;
-    description_pr?: string;
+    description_fr?: string;
     description_pt?: string;
 }
 
 export interface HSCodeUpdate {
     description_en?: string;
-    description_pr?: string;
+    description_fr?: string;
     description_pt?: string;
 }
 

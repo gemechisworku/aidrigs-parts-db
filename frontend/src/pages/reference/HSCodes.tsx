@@ -20,7 +20,7 @@ const HSCodes = () => {
     const [formData, setFormData] = useState<HSCodeCreate>({
         hs_code: '',
         description_en: '',
-        description_pr: '',
+        description_fr: '',
         description_pt: ''
     });
     const [tariffFormData, setTariffFormData] = useState<HSCodeTariffCreate>({
@@ -130,7 +130,7 @@ const HSCodes = () => {
         setFormData({
             hs_code: hs.hs_code,
             description_en: hs.description_en || '',
-            description_pr: hs.description_pr || '',
+            description_fr: hs.description_fr || '',
             description_pt: hs.description_pt || ''
         });
         setShowModal(true);
@@ -158,7 +158,7 @@ const HSCodes = () => {
         setFormData({
             hs_code: '',
             description_en: '',
-            description_pr: '',
+            description_fr: '',
             description_pt: ''
         });
     };
@@ -431,18 +431,18 @@ const HSCodes = () => {
                             </div>
 
                             <div>
-                                <label className="label">Description (Portuguese)</label>
+                                <label className="label">Description (French)</label>
                                 <textarea
-                                    value={formData.description_pr}
-                                    onChange={(e) => setFormData({ ...formData, description_pr: e.target.value })}
+                                    value={formData.description_fr}
+                                    onChange={(e) => setFormData({ ...formData, description_fr: e.target.value })}
                                     className="input"
                                     rows={3}
-                                    placeholder="Portuguese description"
+                                    placeholder="French description"
                                 />
                             </div>
 
                             <div>
-                                <label className="label">Description (Other)</label>
+                                <label className="label">Description (Portuguese)</label>
                                 <textarea
                                     value={formData.description_pt}
                                     onChange={(e) => setFormData({ ...formData, description_pt: e.target.value })}

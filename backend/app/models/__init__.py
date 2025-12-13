@@ -11,6 +11,7 @@ from app.models.part import Part
 from app.models.vehicle import Vehicle, VehicleEquivalence, VehiclePartCompatibility
 from app.models.supplier import Supplier, SupplierPart, PricingRule
 from app.models.quote import Quote, QuoteItem
+from app.models.extracted_quote import ExtractedQuote, ExtractedQuoteItem
 from app.models.purchasing import PurchaseOrder, Shipment, GRNItem
 from app.models.workflow import Approval, ApprovalWorkflow, Inventory, AuditLog
 from app.models.reference_data import Port, PriceTier
@@ -56,6 +57,8 @@ __all__ = [
     # Quotes
     "Quote",
     "QuoteItem",
+    "ExtractedQuote",
+    "ExtractedQuoteItem",
     
     # Purchasing
     "PurchaseOrder",

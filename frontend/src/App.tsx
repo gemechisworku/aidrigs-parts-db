@@ -45,6 +45,10 @@ import Partners from './pages/partners/Partners';
 // Approval pages
 import PendingApprovals from './pages/approvals/PendingApprovals';
 
+// Extracted Quotes pages
+import ExtractedQuotesList from './pages/quotes/ExtractedQuotesList';
+import ExtractedQuoteUpload from './pages/quotes/ExtractedQuoteUpload';
+
 function App() {
     return (
         <AuthProvider>
@@ -119,6 +123,9 @@ function App() {
 
                         {/* Quotes */}
                         <Route path="/quotes" element={<QuotesList />} />
+                        <Route path="/quotes/extracted" element={<ExtractedQuotesList />} />
+                        <Route path="/quotes/extracted/upload" element={<ExtractedQuoteUpload />} />
+                        <Route path="/quotes/extracted/:id" element={<ExtractedQuoteUpload />} />
                     </Route>
 
                     {/* Fallback */}
