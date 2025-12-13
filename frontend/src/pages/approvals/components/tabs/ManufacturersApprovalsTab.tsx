@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { partsAPI, Manufacturer, ManufacturerCreate } from '../../../../services/partsApi';
+import { manufacturersAPI, Manufacturer, ManufacturerCreate } from '../../../../services/manufacturersApi';
 import { countriesAPI, Country } from '../../../../services/countriesApi';
 import { approvalsAPI } from '../../../../services/approvalsApi';
 import { TabComponentProps } from '../../types';
@@ -15,9 +15,8 @@ export const ManufacturersApprovalsTab: React.FC<TabComponentProps> = ({
     const [editingManufacturer, setEditingManufacturer] = useState<Manufacturer | null>(null);
     const [countries, setCountries] = useState<Country[]>([]);
     const [formData, setFormData] = useState<ManufacturerCreate>({
-        mfg_id: '',
         mfg_name: '',
-        mfg_type: '',
+        mfg_type: undefined,
         country: '',
         website: ''
     });
@@ -98,7 +97,6 @@ export const ManufacturersApprovalsTab: React.FC<TabComponentProps> = ({
     const handleEditManufacturer = (mfg: Manufacturer) => {
         setEditingManufacturer(mfg);
         setFormData({
-            mfg_id: mfg.mfg_id,
             mfg_name: mfg.mfg_name,
             mfg_type: mfg.mfg_type || '',
             country: mfg.country || '',
@@ -112,7 +110,7 @@ export const ManufacturersApprovalsTab: React.FC<TabComponentProps> = ({
 
         setLoading(true);
         try {
-            await partsAPI.updateManufacturer(editingManufacturer.id, formData);
+            await manufacturersAPI.updateManufacturer(editingManufacturer.id, formData);
             await loadPendingManufacturers();
             setEditingManufacturer(null);
             alert('Manufacturer updated successfully');
@@ -154,7 +152,7 @@ export const ManufacturersApprovalsTab: React.FC<TabComponentProps> = ({
                         <div className="flex items-start justify-between mb-3">
                             <div className="flex-1">
                                 <h3 className="font-bold text-lg text-gray-900">{mfg.mfg_name}</h3>
-                                <p className="text-sm text-gray-600 mt-1">{mfg.mfg_id}</p>
+
                             </div>
                         </div>
 

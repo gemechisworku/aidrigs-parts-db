@@ -4,7 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { partsAPI, Part, PartCreate, Manufacturer, Position } from '../../services/partsApi';
+import { partsAPI, Part, PartCreate, Manufacturer } from '../../services/partsApi';
 import { translationAPI, Translation } from '../../services/translationApi';
 import PartDetailContent from './PartDetailContent';
 import CreatableSelect from '../../components/common/CreatableSelect';
@@ -13,7 +13,7 @@ const PartsList = () => {
     const [parts, setParts] = useState<Part[]>([]);
     const [manufacturers, setManufacturers] = useState<Manufacturer[]>([]);
     const [translations, setTranslations] = useState<Translation[]>([]);
-    const [positions, setPositions] = useState<Position[]>([]);
+
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
     const [filterMfg, setFilterMfg] = useState('');
@@ -58,14 +58,12 @@ const PartsList = () => {
 
     const loadDropdownData = async () => {
         try {
-            const [mfgs, trans, pos] = await Promise.all([
+            const [mfgs, trans] = await Promise.all([
                 partsAPI.getManufacturers(true),
                 translationAPI.getTranslations({ page: 1, page_size: 1000 }),
-                partsAPI.getPositions(),
             ]);
             setManufacturers(mfgs);
             setTranslations(trans.items);
-            setPositions(pos);
         } catch (error) {
             console.error('Error loading dropdown data:', error);
         }
@@ -511,7 +509,7 @@ const PartsList = () => {
                                         Part Name (EN)
                                     </label>
                                     <CreatableSelect
-                                        value={formData.part_name_en}
+                                        value={formData.part_name_en || ''}
                                         onChange={(value) => setFormData({ ...formData, part_name_en: value })}
                                         options={translations.map((trans) => ({
                                             value: trans.part_name_en,

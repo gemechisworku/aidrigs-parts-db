@@ -8,7 +8,7 @@ import { dashboardApi, DashboardStats } from '../services/dashboardApi';
 
 const Dashboard = () => {
     const navigate = useNavigate();
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -25,11 +25,6 @@ const Dashboard = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
     };
 
     const StatCard = ({ title, value, icon, color, subValue }: { title: string, value: number | string, icon: JSX.Element, color: string, subValue?: string }) => (
