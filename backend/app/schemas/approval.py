@@ -58,5 +58,8 @@ class ApprovalSummary(BaseModel):
     """Summary of pending items across all entity types"""
     pending_parts: int
     pending_translations: int
+    pending_hscodes: int
+    pending_manufacturers: int
+    pending_ports: int
     pending_partners: int
     total_pending: int

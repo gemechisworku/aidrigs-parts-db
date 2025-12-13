@@ -91,7 +91,53 @@ def get_pending_items(
                 "details": {
                     "hs_code": hs_code.hs_code,
                     "description_en": hs_code.description_en,
-                    "description_pr": hs_code.description_pr
+                    "description_fr": hs_code.description_fr
+                }
+            })
+
+    # Get pending Manufacturers
+    if not entity_type or entity_type == "manufacturer":
+        from app.models.manufacturer import Manufacturer
+        manufacturers = db.query(Manufacturer).filter(
+            Manufacturer.approval_status == ApprovalStatus.PENDING_APPROVAL,
+            Manufacturer.deleted_at.is_(None)
+        ).all()
+        
+        for mfg in manufacturers:
+            pending_items.append({
+                "entity_type": "manufacturer",
+                "entity_id": str(mfg.id),
+                "entity_identifier": mfg.mfg_name,
+                "status": mfg.approval_status,
+                "submitted_at": mfg.submitted_at,
+                "details": {
+                    "mfg_name": mfg.mfg_name,
+                    "mfg_type": mfg.mfg_type,
+                    "country": mfg.country,
+                    "website": mfg.website
+                }
+            })
+    
+    # Get pending Ports
+    if not entity_type or entity_type == "port":
+        from app.models.reference_data import Port
+        ports = db.query(Port).filter(
+            Port.approval_status == ApprovalStatus.PENDING_APPROVAL
+        ).all()
+        
+        for port in ports:
+            pending_items.append({
+                "entity_type": "port",
+                "entity_id": str(port.id),
+                "entity_identifier": port.port_name or port.port_code,
+                "status": port.approval_status,
+                "submitted_at": port.submitted_at,
+                "details": {
+                    "port_code": port.port_code,
+                    "port_name": port.port_name,
+                    "country": port.country,
+                    "city": port.city,
+                    "type": port.type
                 }
             })
     
@@ -338,6 +384,112 @@ def reject_part(
     }
 
 
+@router.post("/ports/{port_id}/approve")
+def approve_port(
+    *,
+    db: Session = Depends(deps.get_db),
+    port_id: str,
+    action: ApprovalAction,
+    current_user = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Approve a pending port.
+    """
+    from app.models.reference_data import Port
+    
+    port = db.query(Port).filter(Port.id == port_id).first()
+    if not port:
+        raise HTTPException(status_code=404, detail="Port not found")
+    
+    if port.approval_status not in [ApprovalStatus.PENDING_APPROVAL, ApprovalStatus.REJECTED]:
+        raise HTTPException(status_code=400, detail=f"Port is not pending approval (current status: {port.approval_status})")
+    
+    old_status = port.approval_status
+    
+    # Update port status
+    port.approval_status = ApprovalStatus.APPROVED
+    port.reviewed_at = datetime.utcnow()
+    port.reviewed_by = current_user.id
+    port.rejection_reason = None
+    
+    # Log the approval
+    approval_log = ApprovalLog(
+        entity_type="port",
+        entity_id=port.id,
+        old_status=old_status,
+        new_status=ApprovalStatus.APPROVED,
+        reviewed_by=current_user.id,
+        review_notes=action.review_notes
+    )
+    db.add(approval_log)
+    
+    db.commit()
+    db.refresh(port)
+    
+    logger.info(f"Port {port.port_code} approved by user {current_user.username}")
+    
+    return {
+        "message": "Port approved successfully",
+        "port_id": str(port.id),
+        "port_identifier": port.port_name or port.port_code
+    }
+
+
+@router.post("/ports/{port_id}/reject")
+def reject_port(
+    *,
+    db: Session = Depends(deps.get_db),
+    port_id: str,
+    action: ApprovalAction,
+    current_user = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Reject a pending port.
+    """
+    from app.models.reference_data import Port
+    
+    if not action.rejection_reason or not action.rejection_reason.strip():
+        raise HTTPException(status_code=400, detail="Rejection reason is required")
+    
+    port = db.query(Port).filter(Port.id == port_id).first()
+    if not port:
+        raise HTTPException(status_code=404, detail="Port not found")
+    
+    if port.approval_status != ApprovalStatus.PENDING_APPROVAL:
+        raise HTTPException(status_code=400, detail=f"Port is not pending approval (current status: {port.approval_status})")
+    
+    old_status = port.approval_status
+    
+    # Update port status
+    port.approval_status = ApprovalStatus.REJECTED
+    port.reviewed_at = datetime.utcnow()
+    port.reviewed_by = current_user.id
+    port.rejection_reason = action.rejection_reason
+    
+    # Log the rejection
+    approval_log = ApprovalLog(
+        entity_type="port",
+        entity_id=port.id,
+        old_status=old_status,
+        new_status=ApprovalStatus.REJECTED,
+        reviewed_by=current_user.id,
+        review_notes=action.rejection_reason
+    )
+    db.add(approval_log)
+    
+    db.commit()
+    db.refresh(port)
+    
+    logger.info(f"Port {port.port_code} rejected by user {current_user.username}")
+    
+    return {
+        "message": "Port rejected",
+        "port_id": str(port.id),
+        "port_identifier": port.port_name or port.port_code,
+        "rejection_reason": action.rejection_reason
+    }
+
+
 @router.get("/logs", response_model=List[ApprovalLogResponse])
 def get_approval_logs(
     *,
@@ -415,10 +567,24 @@ def get_approval_summary(
     pending_hscodes = db.query(HSCode).filter(
         HSCode.approval_status == ApprovalStatus.PENDING_APPROVAL
     ).count()
+
+    from app.models.manufacturer import Manufacturer
+    pending_manufacturers = db.query(Manufacturer).filter(
+        Manufacturer.approval_status == ApprovalStatus.PENDING_APPROVAL,
+        Manufacturer.deleted_at.is_( None)
+    ).count()
+    
+    from app.models.reference_data import Port
+    pending_ports = db.query(Port).filter(
+        Port.approval_status == ApprovalStatus.PENDING_APPROVAL
+    ).count()
     
     return {
         "pending_parts": pending_parts,
         "pending_translations": pending_translations,
+        "pending_hscodes": pending_hscodes,
+        "pending_manufacturers": pending_manufacturers,
+        "pending_ports": pending_ports,
         "pending_partners": 0,      # Placeholder
-        "total_pending": pending_parts + pending_translations + pending_hscodes
+        "total_pending": pending_parts + pending_translations + pending_hscodes + pending_manufacturers + pending_ports
     }

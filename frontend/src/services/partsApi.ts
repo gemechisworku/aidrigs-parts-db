@@ -17,13 +17,35 @@ export const partsAPI = {
     },
 
     // Manufacturers
-    getManufacturers: async () => {
-        const response = await apiClient.get<Manufacturer[]>('/manufacturers/');
+    getManufacturers: async (includePending: boolean = false) => {
+        const response = await apiClient.get<Manufacturer[]>('/manufacturers/', {
+            params: {
+                include_pending: includePending,
+                limit: 1000
+            }
+        });
         return response.data;
     },
 
     createManufacturer: async (data: Partial<Manufacturer>) => {
         const response = await apiClient.post<Manufacturer>('/manufacturers/', data);
+        return response.data;
+    },
+
+    updateManufacturer: async (id: string, data: Partial<Manufacturer>) => {
+        const response = await apiClient.put<Manufacturer>(`/manufacturers/${id}`, data);
+        return response.data;
+    },
+
+    approveManufacturer: async (id: string) => {
+        const response = await apiClient.post(`/manufacturers/${id}/approve`);
+        return response.data;
+    },
+
+    rejectManufacturer: async (id: string, reason: string) => {
+        const response = await apiClient.post(`/manufacturers/${id}/reject`, null, {
+            params: { reason }
+        });
         return response.data;
     },
 

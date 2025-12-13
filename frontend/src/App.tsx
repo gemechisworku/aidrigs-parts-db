@@ -13,6 +13,7 @@ import Register from './pages/Register';
 
 // Protected pages
 import Dashboard from './pages/Dashboard';
+import UserGuide from './pages/UserGuide';
 import PartList from './pages/parts/PartList';
 import PartForm from './pages/parts/PartForm';
 import PartDetail from './pages/parts/PartDetail';
@@ -44,6 +45,10 @@ import Partners from './pages/partners/Partners';
 
 // Approval pages
 import PendingApprovals from './pages/approvals/PendingApprovals';
+
+// Extracted Quotes pages
+import ExtractedQuotesList from './pages/quotes/ExtractedQuotesList';
+import ExtractedQuoteUpload from './pages/quotes/ExtractedQuoteUpload';
 
 function App() {
     return (
@@ -81,6 +86,7 @@ function App() {
                     >
                         {/* Dashboard */}
                         <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/user-guide" element={<UserGuide />} />
 
                         {/* User Profile */}
                         <Route path="/profile" element={<Profile />} />
@@ -119,6 +125,9 @@ function App() {
 
                         {/* Quotes */}
                         <Route path="/quotes" element={<QuotesList />} />
+                        <Route path="/quotes/extracted" element={<ExtractedQuotesList />} />
+                        <Route path="/quotes/extracted/upload" element={<ExtractedQuoteUpload />} />
+                        <Route path="/quotes/extracted/:id" element={<ExtractedQuoteUpload />} />
                     </Route>
 
                     {/* Fallback */}

@@ -30,7 +30,7 @@ class Part(BaseModel):
     
     part_id = Column(String(12), unique=True, nullable=False, index=True)  # Legacy/external part ID
     mfg_id = Column(UUID(as_uuid=True), ForeignKey("manufacturers.id"))
-    part_name_en = Column(String(60), ForeignKey("part_translation_standardization.part_name_en"))
+    part_name_en = Column(String(60), ForeignKey("part_translation_standardization.part_name_en", onupdate="CASCADE"))
     position_id = Column(UUID(as_uuid=True), ForeignKey("position_translation.id"))
     drive_side = Column(Enum('NA', 'LHD', 'RHD', name='drive_side_enum'), default='NA')
     designation = Column(String(255))
