@@ -326,10 +326,8 @@ def delete_part(
             detail="Part not found",
         )
     
-    # Soft delete using BaseModel's SoftDeleteMixin
-    from datetime import datetime
-    part.deleted_at = datetime.utcnow()
-    db.add(part)
+    # Hard delete
+    db.delete(part)
     db.commit()
     
     # Audit log
@@ -342,9 +340,40 @@ def delete_part(
         changes={"old": {"part_id": part.part_id, "designation": part.designation}},
         request=request
     )
-    logger.info(f"Part {part.part_id} deleted by user {current_user.username}")
+    logger.info(f"Part {part.part_id} permanently deleted by user {current_user.username}")
     
-    return {"message": "Part deleted successfully", "part_id": str(part.id)}
+    return {"message": "Part permanently deleted successfully", "part_id": str(part.id)}
+
+
+@router.delete("/cleanup/soft-deleted", status_code=status.HTTP_200_OK)
+def cleanup_soft_deleted_parts(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user = Depends(deps.get_current_active_superuser),
+) -> Any:
+    """
+    Permanently remove all parts that were previously soft-deleted.
+    Only accessible by superusers.
+    """
+    # Find all soft-deleted parts
+    soft_deleted_parts = db.query(Part).filter(Part.deleted_at.isnot(None)).all()
+    count = len(soft_deleted_parts)
+    
+    if count == 0:
+        return {"message": "No soft-deleted parts found to cleanup", "count": 0}
+    
+    # Delete them
+    for part in soft_deleted_parts:
+        db.delete(part)
+    
+    db.commit()
+    
+    logger.info(f"Cleaned up {count} soft-deleted parts by user {current_user.username}")
+    
+    return {
+        "message": f"Successfully cleaned up {count} soft-deleted parts",
+        "count": count
+    }
 
 
 # Part Equivalence Endpoints
