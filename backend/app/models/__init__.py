@@ -16,6 +16,7 @@ from app.models.purchasing import PurchaseOrder, Shipment, GRNItem
 from app.models.workflow import Approval, ApprovalWorkflow, Inventory, AuditLog
 from app.models.reference_data import Port, PriceTier
 from app.models.partners import Partner, Contact
+from app.models.setting import SystemSetting
 
 __all__ = [
     # Base
@@ -78,4 +79,7 @@ __all__ = [
     "ApprovalWorkflow",
     "AuditLog",
     "Inventory",
+    
+    # Settings
+    "SystemSetting",
 ]

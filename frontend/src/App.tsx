@@ -13,6 +13,7 @@ import Register from './pages/Register';
 
 // Protected pages
 import Dashboard from './pages/Dashboard';
+import UserGuide from './pages/UserGuide';
 import PartList from './pages/parts/PartList';
 import PartForm from './pages/parts/PartForm';
 import PartDetail from './pages/parts/PartDetail';
@@ -85,6 +86,7 @@ function App() {
                     >
                         {/* Dashboard */}
                         <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/user-guide" element={<UserGuide />} />
 
                         {/* User Profile */}
                         <Route path="/profile" element={<Profile />} />

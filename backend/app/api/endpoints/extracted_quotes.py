@@ -24,6 +24,7 @@ from app.schemas.extracted_quote import (
 )
 from app.core.audit import log_audit
 from app.core.config import settings
+from app.core.settings_helper import get_system_setting
 from math import ceil
 
 logger = logging.getLogger(__name__)
@@ -96,7 +97,8 @@ async def upload_quote_file(
     try:
         async with httpx.AsyncClient(timeout=120.0) as client:  # 120 second timeout
             files = {"file": (file.filename, file_content, file.content_type)}
-            response = await client.post(settings.EXTRACTED_QUOTES_WEBHOOK_URL, files=files)
+            webhook_url = get_system_setting("EXTRACTED_QUOTES_WEBHOOK_URL")
+            response = await client.post(webhook_url, files=files)
             response.raise_for_status()
             webhook_data = response.json()
     except httpx.TimeoutException:
