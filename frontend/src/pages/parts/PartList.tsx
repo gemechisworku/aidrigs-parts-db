@@ -4,7 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { partsAPI, Part, PartCreate, Manufacturer, Position } from '../../services/partsApi';
+import { partsAPI, Part, PartCreate, Manufacturer } from '../../services/partsApi';
 import { translationAPI, Translation } from '../../services/translationApi';
 import PartDetailContent from './PartDetailContent';
 import CreatableSelect from '../../components/common/CreatableSelect';
@@ -13,7 +13,7 @@ const PartsList = () => {
     const [parts, setParts] = useState<Part[]>([]);
     const [manufacturers, setManufacturers] = useState<Manufacturer[]>([]);
     const [translations, setTranslations] = useState<Translation[]>([]);
-    const [positions, setPositions] = useState<Position[]>([]);
+
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
     const [filterMfg, setFilterMfg] = useState('');
@@ -58,14 +58,12 @@ const PartsList = () => {
 
     const loadDropdownData = async () => {
         try {
-            const [mfgs, trans, pos] = await Promise.all([
-                partsAPI.getManufacturers(),
+            const [mfgs, trans] = await Promise.all([
+                partsAPI.getManufacturers(true),
                 translationAPI.getTranslations({ page: 1, page_size: 1000 }),
-                partsAPI.getPositions(),
             ]);
             setManufacturers(mfgs);
             setTranslations(trans.items);
-            setPositions(pos);
         } catch (error) {
             console.error('Error loading dropdown data:', error);
         }
@@ -93,6 +91,14 @@ const PartsList = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validate mfg_id is a UUID if present (prevents submitting typed names that weren't created)
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (formData.mfg_id && !uuidRegex.test(formData.mfg_id)) {
+            alert('Please select a valid manufacturer from the list or create a new one using the "Create" option.');
+            return;
+        }
+
         try {
             if (editingPart) {
                 await partsAPI.updatePart(editingPart.id, formData);
@@ -103,6 +109,7 @@ const PartsList = () => {
             resetForm();
             loadParts();
         } catch (error: any) {
+            console.error('Error saving part:', error);
             alert(error.response?.data?.detail || 'Error saving part');
         }
     };
@@ -134,7 +141,7 @@ const PartsList = () => {
         let timeoutId: number;
 
         const fetchSuggestions = async () => {
-            if (formData.part_name_en && !editingPart) {
+            if (formData.part_name_en) {
                 setLoadingSuggestions(true);
                 try {
                     const result = await partsAPI.getDimensionSuggestions(formData.part_name_en);
@@ -142,15 +149,25 @@ const PartsList = () => {
                         setDimensionSuggestions(result.suggestions);
                         // Auto-fill with recommended (smallest volumetric ratio)
                         if (result.recommended) {
-                            setFormData(prev => ({
-                                ...prev,
-                                length: result.recommended.length,
-                                width: result.recommended.width,
-                                height: result.recommended.height,
-                                weight: result.recommended.weight,
-                                moq: result.recommended.moq,
-                            }));
-                            setAutoFilledFrom(result.recommended.part_id);
+                            // Check if we should auto-fill (always if not editing, or if editing but empty data)
+                            const hasExistingData = editingPart && (
+                                Number(formData.length || 0) > 0 ||
+                                Number(formData.width || 0) > 0 ||
+                                Number(formData.height || 0) > 0 ||
+                                Number(formData.weight || 0) > 0
+                            );
+
+                            if (!hasExistingData) {
+                                setFormData(prev => ({
+                                    ...prev,
+                                    length: result.recommended.length,
+                                    width: result.recommended.width,
+                                    height: result.recommended.height,
+                                    weight: result.recommended.weight,
+                                    moq: result.recommended.moq,
+                                }));
+                                setAutoFilledFrom(result.recommended.part_id);
+                            }
                         }
                     } else {
                         setDimensionSuggestions([]);
@@ -432,18 +449,68 @@ const PartsList = () => {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Manufacturer
                                     </label>
-                                    <select
-                                        value={formData.mfg_id}
-                                        onChange={(e) => setFormData({ ...formData, mfg_id: e.target.value })}
+                                    <CreatableSelect
+                                        value={(() => {
+                                            // If mfg_id is set, find the manufacturer and return its name, otherwise return empty
+                                            if (formData.mfg_id) {
+                                                const selectedMfg = manufacturers.find(m => m.id === formData.mfg_id);
+                                                return selectedMfg ? selectedMfg.mfg_name : formData.mfg_id;
+                                            }
+                                            return '';
+                                        })()}
+                                        onChange={(value) => {
+                                            // Check if the value matches a manufacturer name
+                                            const matchingMfg = manufacturers.find(m =>
+                                                m.mfg_name === value || m.id === value
+                                            );
+                                            setFormData({
+                                                ...formData,
+                                                mfg_id: matchingMfg ? matchingMfg.id : value
+                                            });
+                                        }}
+                                        options={manufacturers.map((mfg) => ({
+                                            value: mfg.mfg_name,
+                                            label: mfg.mfg_name,
+                                            isPending: mfg.approval_status === 'PENDING_APPROVAL'
+                                        }))}
+                                        onCreate={async (newMfgName) => {
+                                            try {
+                                                const newMfg = await partsAPI.createManufacturer({
+                                                    mfg_name: newMfgName.trim(),
+                                                    mfg_type: 'OEM', // Default type
+                                                    certification: null
+                                                });
+                                                // Reload manufacturers to include the new one
+                                                const mfgs = await partsAPI.getManufacturers(true);
+                                                setManufacturers(mfgs);
+
+                                                setFormData({ ...formData, mfg_id: newMfg.id });
+                                                alert(`Manufacturer "${newMfgName}" submitted for approval!`);
+                                            } catch (error: any) {
+                                                // Handle "already exists" error
+                                                if (error.response?.status === 400 && error.response?.data?.detail?.includes('already exists')) {
+                                                    // Reload manufacturers to ensure we have the latest list (including pending)
+                                                    const mfgs = await partsAPI.getManufacturers(true);
+                                                    setManufacturers(mfgs);
+
+                                                    // Find the existing manufacturer
+                                                    const existing = mfgs.find(m => m.mfg_name.toLowerCase() === newMfgName.trim().toLowerCase());
+                                                    if (existing) {
+                                                        setFormData({ ...formData, mfg_id: existing.id });
+                                                        alert(`Manufacturer "${existing.mfg_name}" already exists. Selected it.`);
+                                                        return;
+                                                    }
+                                                }
+
+                                                console.error('Error creating manufacturer:', error);
+                                                throw new Error(error.response?.data?.detail || 'Failed to create manufacturer');
+                                            }
+                                        }}
+                                        placeholder="Select or type manufacturer name..."
                                         className="input"
-                                    >
-                                        <option value="">-- Select Manufacturer --</option>
-                                        {manufacturers.map((mfg) => (
-                                            <option key={mfg.id} value={mfg.id}>
-                                                {mfg.mfg_name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        name="mfg_id"
+                                        id="mfg_id"
+                                    />
                                 </div>
 
                                 {/* Part Name (Translation) */}
@@ -452,7 +519,7 @@ const PartsList = () => {
                                         Part Name (EN)
                                     </label>
                                     <CreatableSelect
-                                        value={formData.part_name_en}
+                                        value={formData.part_name_en || ''}
                                         onChange={(value) => setFormData({ ...formData, part_name_en: value })}
                                         options={translations.map((trans) => ({
                                             value: trans.part_name_en,
@@ -467,7 +534,7 @@ const PartsList = () => {
                                 </div>
 
                                 {/* Auto-fill Indicator and Manual Selection */}
-                                {!editingPart && formData.part_name_en && (
+                                {formData.part_name_en && (
                                     <div className="col-span-2">
                                         {loadingSuggestions ? (
                                             <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -483,7 +550,7 @@ const PartsList = () => {
                                                         </svg>
                                                         <div>
                                                             <p className="text-sm font-medium text-blue-900">
-                                                                Dimensions auto-filled from: <span className="font-bold">{autoFilledFrom}</span>
+                                                                {autoFilledFrom ? 'Dimensions auto-filled from:' : 'Similar part found:'} <span className="font-bold">{autoFilledFrom || (dimensionSuggestions[0] && dimensionSuggestions[0].part_id)}</span>
                                                             </p>
                                                             {dimensionSuggestions.length > 1 && (
                                                                 <button
@@ -507,7 +574,7 @@ const PartsList = () => {
                                                                 <div
                                                                     key={idx}
                                                                     onClick={() => handleSelectSuggestion(suggestion)}
-                                                                    className={`cursor-pointer p-3 rounded border transition-colors ${suggestion.part_id === autoFilledFrom
+                                                                    className={`cursor-pointer p-3 rounded border transition-colors ${suggestion.part_id === (autoFilledFrom || (dimensionSuggestions[0] && dimensionSuggestions[0].part_id))
                                                                         ? 'bg-blue-100 border-blue-300'
                                                                         : 'bg-white border-gray-200 hover:border-blue-300 hover:bg-blue-50'
                                                                         }`}

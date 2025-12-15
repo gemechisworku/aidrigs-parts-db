@@ -7,6 +7,7 @@ export interface User {
     last_name?: string;
     is_active: boolean;
     is_superuser: boolean;
+    last_login?: string;
     created_at: string;
     updated_at: string;
 }
@@ -22,6 +23,7 @@ export interface RegisterData {
     password: string;
     first_name?: string;
     last_name?: string;
+    token?: string;
 }
 
 export interface AuthResponse {

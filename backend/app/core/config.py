@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     
     # CORS Settings
     CORS_ORIGINS: List[str] = [
+        "http://localhost:5173",
         "http://localhost:5175",
         "http://localhost:3000",
         "http://localhost:3001",
@@ -39,6 +40,9 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     ENVIRONMENT: str = "development"
     LOG_LEVEL: str = "INFO"
+    
+    # Webhook Settings
+    EXTRACTED_QUOTES_WEBHOOK_URL: str = "https://n8n.dev.tas.coopaifoundry.com/webhook/upload-file"
     
     model_config = SettingsConfigDict(
         env_file=".env",

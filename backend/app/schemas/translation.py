@@ -26,6 +26,7 @@ class TranslationCreate(TranslationBase):
 
 class TranslationUpdate(BaseModel):
     """Schema for updating an existing translation"""
+    part_name_en: Optional[str] = Field(None, max_length=60)
     part_name_pr: Optional[str] = Field(None, max_length=60)
     part_name_fr: Optional[str] = Field(None, max_length=60)
     hs_code: Optional[str] = Field(None, max_length=14)

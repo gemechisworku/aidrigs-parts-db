@@ -138,9 +138,9 @@ const Login: React.FC = () => {
                             </div>
 
                             <div className="text-sm">
-                                <a href="#" className="font-medium text-red-600 hover:text-red-700">
+                                <Link to="/forgot-password" className="font-medium text-red-600 hover:text-red-700">
                                     Forgot password?
-                                </a>
+                                </Link>
                             </div>
                         </div>
 
@@ -164,28 +164,7 @@ const Login: React.FC = () => {
                                 )}
                             </button>
                         </div>
-
-                        {/* Register Link */}
-                        <div className="text-center">
-                            <p className="text-sm text-gray-600">
-                                Don't have an account?{' '}
-                                <Link to="/register" className="font-medium text-red-600 hover:text-red-700">
-                                    Create one now
-                                </Link>
-                            </p>
-                        </div>
                     </form>
-                </div>
-
-                {/* Demo Credentials */}
-                <div className="bg-gray-100 border border-gray-200 rounded-lg p-4 text-center">
-                    <p className="text-xs text-gray-500 font-medium mb-2">Demo Credentials</p>
-                    <p className="text-xs text-gray-600">
-                        Email: <span className="font-mono bg-white px-2 py-1 rounded">admin@aidrigs.com</span>
-                    </p>
-                    <p className="text-xs text-gray-600 mt-1">
-                        Password: <span className="font-mono bg-white px-2 py-1 rounded">admin123</span>
-                    </p>
                 </div>
             </div>
         </div>

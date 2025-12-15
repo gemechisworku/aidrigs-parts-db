@@ -14,6 +14,9 @@ export interface PendingPart {
 export interface ApprovalSummary {
     pending_parts: number;
     pending_translations: number;
+    pending_hscodes: number;
+    pending_manufacturers: number;
+    pending_ports: number;
     pending_partners: number;
     total_pending: number;
 }
@@ -64,4 +67,27 @@ export const approvalsAPI = {
         });
         return response.data;
     },
+
+    // Approve a port
+    approvePort: async (portId: string, reviewNotes?: string) => {
+        const response = await apiClient.post(`/approvals/ports/${portId}/approve`, {
+            review_notes: reviewNotes
+        });
+        return response.data;
+    },
+
+    // Reject a port
+    rejectPort: async (portId: string, rejectionReason: string) => {
+        const response = await apiClient.post(`/approvals/ports/${portId}/reject`, {
+            rejection_reason: rejectionReason
+        });
+        return response.data;
+    },
+
+    // Get all pending items (generic)
+    getPendingItems: async (entityType?: string) => {
+        const params = entityType ? { entity_type: entityType } : {};
+        const response = await apiClient.get<any[]>('/approvals/pending', { params });
+        return response.data;
+    }
 };

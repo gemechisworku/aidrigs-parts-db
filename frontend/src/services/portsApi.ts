@@ -11,6 +11,12 @@ export interface Port {
     country_name?: string;
     city?: string;
     type?: 'Sea' | 'Air' | 'Land';
+    approval_status?: string;
+    submitted_at?: string;
+    reviewed_at?: string;
+    reviewed_by?: string;
+    rejection_reason?: string;
+    created_by?: string;
     created_at: string;
     updated_at: string;
 }

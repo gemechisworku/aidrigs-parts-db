@@ -8,7 +8,7 @@ from decimal import Decimal
 class HSCodeBase(BaseModel):
     hs_code: str = Field(..., min_length=1, max_length=14)
     description_en: Optional[str] = Field(None, max_length=252)
-    description_pr: Optional[str] = Field(None, max_length=252)
+    description_fr: Optional[str] = Field(None, max_length=252)
     description_pt: Optional[str] = Field(None, max_length=252)
 
 
@@ -18,7 +18,7 @@ class HSCodeCreate(HSCodeBase):
 
 class HSCodeUpdate(BaseModel):
     description_en: Optional[str] = None
-    description_pr: Optional[str] = None
+    description_fr: Optional[str] = None
     description_pt: Optional[str] = None
 
 

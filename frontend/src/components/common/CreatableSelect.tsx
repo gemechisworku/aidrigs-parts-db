@@ -16,6 +16,7 @@ interface CreatableSelectProps {
     id?: string;
     required?: boolean;
     onCreate?: (value: string) => Promise<any> | any;
+    allowCreateOption?: boolean;
 }
 
 const CreatableSelect: React.FC<CreatableSelectProps> = ({
@@ -27,7 +28,8 @@ const CreatableSelect: React.FC<CreatableSelectProps> = ({
     name,
     id,
     required = false,
-    onCreate
+    onCreate,
+    allowCreateOption = true
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [inputValue, setInputValue] = useState(value || '');
@@ -77,7 +79,7 @@ const CreatableSelect: React.FC<CreatableSelectProps> = ({
     };
 
     const isCreatingNew = inputValue && !options.some(opt => opt.value === inputValue);
-    const showCreateOption = isCreatingNew && inputValue.length > 0;
+    const showCreateOption = allowCreateOption && isCreatingNew && inputValue.length > 0;
 
     return (
         <div ref={wrapperRef} className="relative">
@@ -94,7 +96,7 @@ const CreatableSelect: React.FC<CreatableSelectProps> = ({
                 autoComplete="off"
             />
 
-            {isOpen && (filteredOptions.length > 0 || showCreateOption) && (
+            {isOpen && (filteredOptions.length > 0 || showCreateOption || (filteredOptions.length === 0 && !allowCreateOption)) && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
                     {showCreateOption && (
                         <div

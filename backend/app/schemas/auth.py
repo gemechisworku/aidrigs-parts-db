@@ -18,6 +18,7 @@ class UserRegister(BaseModel):
     password: str = Field(..., min_length=8, max_length=100)
     first_name: Optional[str] = Field(None, max_length=100)
     last_name: Optional[str] = Field(None, max_length=100)
+    token: str = Field(..., description="Invite token required for registration")
     
     @validator('username')
     def username_alphanumeric(cls, v):
@@ -55,6 +56,30 @@ class TokenData(BaseModel):
 class PasswordChange(BaseModel):
     """Schema for password change"""
     old_password: str
+    new_password: str = Field(..., min_length=8, max_length=100)
+    
+    @validator('new_password')
+    def password_strength(cls, v):
+        """Ensure password meets strength requirements"""
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters')
+        if not any(char.isdigit() for char in v):
+            raise ValueError('Password must contain at least one digit')
+        if not any(char.isupper() for char in v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not any(char.islower() for char in v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        return v
+
+
+class PasswordResetRequest(BaseModel):
+    """Schema for password reset request"""
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    """Schema for password reset confirmation"""
+    token: str
     new_password: str = Field(..., min_length=8, max_length=100)
     
     @validator('new_password')

@@ -10,9 +10,12 @@ import Layout from './components/layout/Layout';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 
 // Protected pages
 import Dashboard from './pages/Dashboard';
+import UserGuide from './pages/UserGuide';
 import PartList from './pages/parts/PartList';
 import PartForm from './pages/parts/PartForm';
 import PartDetail from './pages/parts/PartDetail';
@@ -30,6 +33,7 @@ import MyRequests from './pages/requests/MyRequests';
 import Roles from './pages/admin/Roles';
 import Permissions from './pages/admin/Permissions';
 import Configs from './pages/admin/Configs';
+import UserManagement from './pages/admin/UserManagement';
 import AuditLogs from './pages/admin/AuditLogs';
 import QuotesList from './pages/quotes/QuotesList';
 
@@ -44,6 +48,10 @@ import Partners from './pages/partners/Partners';
 
 // Approval pages
 import PendingApprovals from './pages/approvals/PendingApprovals';
+
+// Extracted Quotes pages
+import ExtractedQuotesList from './pages/quotes/ExtractedQuotesList';
+import ExtractedQuoteUpload from './pages/quotes/ExtractedQuoteUpload';
 
 function App() {
     return (
@@ -70,6 +78,22 @@ function App() {
                             </ProtectedRoute>
                         }
                     />
+                    <Route
+                        path="/forgot-password"
+                        element={
+                            <ProtectedRoute requireAuth={false}>
+                                <ForgotPassword />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/reset-password"
+                        element={
+                            <ProtectedRoute requireAuth={false}>
+                                <ResetPassword />
+                            </ProtectedRoute>
+                        }
+                    />
 
                     {/* Protected Routes with Layout */}
                     <Route
@@ -81,6 +105,7 @@ function App() {
                     >
                         {/* Dashboard */}
                         <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/user-guide" element={<UserGuide />} />
 
                         {/* User Profile */}
                         <Route path="/profile" element={<Profile />} />
@@ -114,18 +139,22 @@ function App() {
                         <Route path="/admin/roles" element={<Roles />} />
                         <Route path="/admin/permissions" element={<Permissions />} />
                         <Route path="/admin/configs" element={<Configs />} />
+                        <Route path="/admin/users" element={<UserManagement />} />
                         <Route path="/admin/approvals" element={<PendingApprovals />} />
                         <Route path="/admin/audit-logs" element={<AuditLogs />} />
 
                         {/* Quotes */}
                         <Route path="/quotes" element={<QuotesList />} />
+                        <Route path="/quotes/extracted" element={<ExtractedQuotesList />} />
+                        <Route path="/quotes/extracted/upload" element={<ExtractedQuoteUpload />} />
+                        <Route path="/quotes/extracted/:id" element={<ExtractedQuoteUpload />} />
                     </Route>
 
                     {/* Fallback */}
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </Router>
-        </AuthProvider>
+        </AuthProvider >
     );
 }
 

@@ -3,7 +3,6 @@ from pydantic import BaseModel, UUID4
 from datetime import datetime
 
 class ManufacturerBase(BaseModel):
-    mfg_id: str
     mfg_name: str
     mfg_type: str  # OEM, APM, Remanufacturers
     country: Optional[str] = None
@@ -15,7 +14,6 @@ class ManufacturerCreate(ManufacturerBase):
     pass
 
 class ManufacturerUpdate(BaseModel):
-    mfg_id: Optional[str] = None
     mfg_name: Optional[str] = None
     mfg_type: Optional[str] = None
     country: Optional[str] = None
@@ -25,6 +23,10 @@ class ManufacturerUpdate(BaseModel):
 
 class ManufacturerResponse(ManufacturerBase):
     id: UUID4
+    approval_status: Optional[str] = None
+    submitted_at: Optional[datetime] = None
+    reviewed_at: Optional[datetime] = None
+    rejection_reason: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     

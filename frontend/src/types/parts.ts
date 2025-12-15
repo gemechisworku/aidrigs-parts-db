@@ -9,12 +9,13 @@ export interface Category {
 
 export interface Manufacturer {
     id: string;
-    mfg_id: string;
     mfg_name: string;
     mfg_type: 'OEM' | 'APM' | 'Remanufacturers';
     country?: string;
     website?: string;
     contact_info?: Record<string, any>;
+    certification?: string | null;
+    approval_status?: string;
 }
 
 export interface Position {

@@ -15,7 +15,7 @@ class HSCode(BaseModel):
     
     hs_code = Column(String(14), unique=True, nullable=False, index=True)
     description_en = Column(Text)
-    description_pr = Column(Text)  # Portuguese
+    description_fr = Column(Text)  # French
     description_pt = Column(Text)  # Portuguese (alternative)
     
     # Approval fields

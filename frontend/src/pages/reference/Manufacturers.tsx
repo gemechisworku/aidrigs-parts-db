@@ -125,7 +125,8 @@ const Manufacturers = () => {
                     <table className="table-auto w-full">
                         <thead>
                             <tr className="bg-gray-50 border-b border-gray-200">
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                {/* ID column removed */}
+                                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th> */}
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Country</th>
@@ -136,9 +137,12 @@ const Manufacturers = () => {
                         <tbody className="bg-white divide-y divide-gray-200">
                             {manufacturers.map((mfg) => (
                                 <tr key={mfg.id} className="hover:bg-gray-50 transition-colors">
+                                    {/* ID cell removed */}
+                                    {/* 
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                         {mfg.mfg_id}
                                     </td>
+                                    */}
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                                         {mfg.mfg_name}
                                         {mfg.certification && (
@@ -229,6 +233,8 @@ const Manufacturers = () => {
 
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             <div className="grid grid-cols-2 gap-4">
+                                {/* mfg_id input removed */}
+                                {/* 
                                 <div>
                                     <label className="label">Manufacturer ID</label>
                                     <input
@@ -243,6 +249,7 @@ const Manufacturers = () => {
                                     />
                                     <p className="text-xs text-gray-500 mt-1">Unique identifier (max 10 chars)</p>
                                 </div>
+                                */}
                                 <div>
                                     <label className="label">Type</label>
                                     <select

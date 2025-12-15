@@ -14,9 +14,9 @@ export interface Manufacturer {
 }
 
 export interface ManufacturerCreate {
-    mfg_id: string;
+    mfg_id?: string;
     mfg_name: string;
-    mfg_type: 'OEM' | 'APM' | 'Remanufacturers';
+    mfg_type?: 'OEM' | 'APM' | 'Remanufacturers';
     country?: string;
     website?: string;
     contact_info?: Record<string, any>;

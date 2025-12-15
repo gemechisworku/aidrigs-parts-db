@@ -22,13 +22,18 @@ async def get_ports(
     skip: int = 0,
     limit: int = 100,
     search: str = None,
+    include_pending: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Get all ports with optional search"""
+    """Get all ports with optional search. By default only returns approved ports."""
     from sqlalchemy.orm import joinedload
     
     query = db.query(Port).options(joinedload(Port.country_details))
+    
+    # Filter by approval status - only show approved by default
+    if not include_pending:
+        query = query.filter(Port.approval_status == "APPROVED")
     
     if search:
         query = query.filter(
@@ -78,7 +83,7 @@ async def create_port(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Create a new port"""
+    """Create a new port with PENDING_APPROVAL status"""
     # Check if port_code already exists
     existing = db.query(Port).filter(Port.port_code == port_data.port_code).first()
     if existing:
@@ -87,7 +92,11 @@ async def create_port(
             detail=f"Port with code {port_data.port_code} already exists"
         )
     
-    port = Port(**port_data.model_dump())
+    port_dict = port_data.model_dump()
+    port_dict['approval_status'] = 'PENDING_APPROVAL'
+    port_dict['created_by'] = current_user.id
+    
+    port = Port(**port_dict)
     db.add(port)
     db.commit()
     db.refresh(port)

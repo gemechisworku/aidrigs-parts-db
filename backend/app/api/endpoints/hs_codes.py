@@ -354,7 +354,7 @@ async def bulk_upload(
 ) -> Any:
     """
     Bulk upload HS codes from CSV file.
-    Expected columns: hs_code, description_en, description_pr, description_pt
+    Expected columns: hs_code, description_en, description_fr, description_pt
     """
     created = 0
     updated = 0
@@ -379,7 +379,7 @@ async def bulk_upload(
                 if existing:
                     # Update
                     existing.description_en = row.get('description_en', '')
-                    existing.description_pr = row.get('description_pr', '')
+                    existing.description_fr = row.get('description_fr', '')
                     existing.description_pt = row.get('description_pt', '')
                     updated += 1
                 else:
@@ -387,7 +387,7 @@ async def bulk_upload(
                     new_hs_code = HSCode(
                         hs_code=hs_code,
                         description_en=row.get('description_en', ''),
-                        description_pr=row.get('description_pr', ''),
+                        description_fr=row.get('description_fr', ''),
                         description_pt=row.get('description_pt', '')
                     )
                     db.add(new_hs_code)
@@ -411,7 +411,7 @@ async def download_template():
     """
     Download CSV template for bulk upload.
     """
-    csv_content = "hs_code,description_en,description_pr,description_pt\n"
+    csv_content = "hs_code,description_en,description_fr,description_pt\n"
     csv_content += "0101.21,Live horses - purebred breeding,,,\n"
     csv_content += "8471.30,Portable digital computers,,,\n"
     

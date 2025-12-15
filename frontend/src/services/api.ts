@@ -79,6 +79,7 @@ export const authAPI = {
         password: string;
         first_name?: string;
         last_name?: string;
+        token?: string;
     }) {
         const response = await apiClient.post('/auth/register', data);
         return response.data;
@@ -120,6 +121,25 @@ export const authAPI = {
      */
     async logout() {
         const response = await apiClient.post('/auth/logout');
+        return response.data;
+    },
+
+    /**
+     * Request password reset
+     */
+    async forgotPassword(email: string) {
+        const response = await apiClient.post('/auth/forgot-password', { email });
+        return response.data;
+    },
+
+    /**
+     * Reset password with token
+     */
+    async resetPassword(token: string, newPassword: string) {
+        const response = await apiClient.post('/auth/reset-password', {
+            token,
+            new_password: newPassword,
+        });
         return response.data;
     },
 };
