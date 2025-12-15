@@ -174,3 +174,31 @@ async def get_current_superuser(
             detail="Not enough permissions"
         )
     return current_user
+
+
+def generate_password_reset_token(email: str) -> str:
+    """
+    Generate a password reset token
+    """
+    delta = timedelta(hours=1)
+    now = datetime.utcnow()
+    expires = now + delta
+    encoded_jwt = jwt.encode(
+        {"exp": expires, "nbf": now, "sub": email, "type": "password_reset"},
+        settings.SECRET_KEY,
+        algorithm=settings.ALGORITHM,
+    )
+    return encoded_jwt
+
+
+def verify_password_reset_token(token: str) -> Optional[str]:
+    """
+    Verify a password reset token and return the email
+    """
+    try:
+        decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        if decoded_token["type"] != "password_reset":
+            return None
+        return decoded_token["sub"]
+    except JWTError:
+        return None

@@ -10,6 +10,8 @@ import Layout from './components/layout/Layout';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 
 // Protected pages
 import Dashboard from './pages/Dashboard';
@@ -31,6 +33,7 @@ import MyRequests from './pages/requests/MyRequests';
 import Roles from './pages/admin/Roles';
 import Permissions from './pages/admin/Permissions';
 import Configs from './pages/admin/Configs';
+import UserManagement from './pages/admin/UserManagement';
 import AuditLogs from './pages/admin/AuditLogs';
 import QuotesList from './pages/quotes/QuotesList';
 
@@ -72,6 +75,22 @@ function App() {
                         element={
                             <ProtectedRoute requireAuth={false}>
                                 <Register />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/forgot-password"
+                        element={
+                            <ProtectedRoute requireAuth={false}>
+                                <ForgotPassword />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/reset-password"
+                        element={
+                            <ProtectedRoute requireAuth={false}>
+                                <ResetPassword />
                             </ProtectedRoute>
                         }
                     />
@@ -120,6 +139,7 @@ function App() {
                         <Route path="/admin/roles" element={<Roles />} />
                         <Route path="/admin/permissions" element={<Permissions />} />
                         <Route path="/admin/configs" element={<Configs />} />
+                        <Route path="/admin/users" element={<UserManagement />} />
                         <Route path="/admin/approvals" element={<PendingApprovals />} />
                         <Route path="/admin/audit-logs" element={<AuditLogs />} />
 
@@ -134,7 +154,7 @@ function App() {
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </Router>
-        </AuthProvider>
+        </AuthProvider >
     );
 }
 

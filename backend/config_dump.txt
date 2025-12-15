@@ -1,0 +1,8 @@
+--- SMTP CONFIG DUMP ---
+SMTP_HOST: smtp.gmail.com
+SMTP_FROM_EMAIL: aidrigsinvitation@gmail.com
+SMTP_PORT: 465
+SMTP_USE_TLS: false
+SMTP_PASSWORD: jx...gw (Len: 16)
+SMTP_USER: aidrigsinvitation@gmail.com
+------------------------

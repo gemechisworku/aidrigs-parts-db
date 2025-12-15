@@ -16,11 +16,15 @@ from app.core.security import (
     get_db
 )
 from app.core.config import settings
-from app.models.user import User
-from app.schemas.auth import UserLogin, UserRegister, Token, PasswordChange
+from app.models.user import User, UserInvite
+from app.schemas.auth import UserLogin, UserRegister, Token, PasswordChange, PasswordResetRequest, PasswordResetConfirm
 from app.schemas.user import UserResponse, UserWithRoles, UserUpdate
 from app.core.audit import log_audit
 import logging
+from datetime import datetime, timezone
+from app.core.email import send_reset_password_email
+from app.core.security import generate_password_reset_token, verify_password_reset_token
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +58,32 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
             detail="Username already taken"
         )
     
+    # Validate Invite Token
+    invite = db.query(UserInvite).filter(UserInvite.token == user_data.token).first()
+    if not invite:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid invite token"
+        )
+        
+    if invite.is_used:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invite token already used"
+        )
+        
+    if invite.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invite token expired"
+        )
+        
+    if invite.email != user_data.email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email does not match invite"
+        )
+    
     # Create new user
     new_user = User(
         email=user_data.email,
@@ -66,6 +96,12 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
     )
     
     db.add(new_user)
+    
+    # Mark invite as used
+    invite.is_used = True
+    invite.invited_by = invite.invited_by # Keep track of who invited
+    db.add(invite)
+    
     db.commit()
     db.refresh(new_user)
     
@@ -229,3 +265,56 @@ async def logout(current_user: User = Depends(get_current_active_user)):
     by removing the token. This endpoint is mainly for logging purposes.
     """
     return {"message": "Logged out successfully"}
+
+
+@router.post("/forgot-password", status_code=status.HTTP_200_OK)
+async def forgot_password(
+    password_request: PasswordResetRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Request password reset email
+    """
+    user = db.query(User).filter(User.email == password_request.email).first()
+    # We always return success to prevent email enumeration
+    if user and user.is_active:
+        token = generate_password_reset_token(email=user.email)
+        frontend_url = settings.CORS_ORIGINS[0] if settings.CORS_ORIGINS else "http://localhost:5173"
+        link = f"{frontend_url}/reset-password?token={token}"
+        send_reset_password_email(user.email, user.email, link)
+        
+    return {"message": "If this email exists, a password reset link has been sent"}
+
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK)
+async def reset_password(
+    password_reset: PasswordResetConfirm,
+    db: Session = Depends(get_db)
+):
+    """
+    Reset password using token
+    """
+    email = verify_password_reset_token(password_reset.token)
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired token"
+        )
+        
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+        
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Inactive user"
+        )
+        
+    user.password_hash = get_password_hash(password_reset.new_password)
+    db.commit()
+    
+    return {"message": "Password reset successfully"}
