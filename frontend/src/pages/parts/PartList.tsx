@@ -141,7 +141,7 @@ const PartsList = () => {
         let timeoutId: number;
 
         const fetchSuggestions = async () => {
-            if (formData.part_name_en && !editingPart) {
+            if (formData.part_name_en) {
                 setLoadingSuggestions(true);
                 try {
                     const result = await partsAPI.getDimensionSuggestions(formData.part_name_en);
@@ -149,15 +149,25 @@ const PartsList = () => {
                         setDimensionSuggestions(result.suggestions);
                         // Auto-fill with recommended (smallest volumetric ratio)
                         if (result.recommended) {
-                            setFormData(prev => ({
-                                ...prev,
-                                length: result.recommended.length,
-                                width: result.recommended.width,
-                                height: result.recommended.height,
-                                weight: result.recommended.weight,
-                                moq: result.recommended.moq,
-                            }));
-                            setAutoFilledFrom(result.recommended.part_id);
+                            // Check if we should auto-fill (always if not editing, or if editing but empty data)
+                            const hasExistingData = editingPart && (
+                                Number(formData.length || 0) > 0 ||
+                                Number(formData.width || 0) > 0 ||
+                                Number(formData.height || 0) > 0 ||
+                                Number(formData.weight || 0) > 0
+                            );
+
+                            if (!hasExistingData) {
+                                setFormData(prev => ({
+                                    ...prev,
+                                    length: result.recommended.length,
+                                    width: result.recommended.width,
+                                    height: result.recommended.height,
+                                    weight: result.recommended.weight,
+                                    moq: result.recommended.moq,
+                                }));
+                                setAutoFilledFrom(result.recommended.part_id);
+                            }
                         }
                     } else {
                         setDimensionSuggestions([]);
@@ -524,7 +534,7 @@ const PartsList = () => {
                                 </div>
 
                                 {/* Auto-fill Indicator and Manual Selection */}
-                                {!editingPart && formData.part_name_en && (
+                                {formData.part_name_en && (
                                     <div className="col-span-2">
                                         {loadingSuggestions ? (
                                             <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -540,7 +550,7 @@ const PartsList = () => {
                                                         </svg>
                                                         <div>
                                                             <p className="text-sm font-medium text-blue-900">
-                                                                Dimensions auto-filled from: <span className="font-bold">{autoFilledFrom}</span>
+                                                                {autoFilledFrom ? 'Dimensions auto-filled from:' : 'Similar part found:'} <span className="font-bold">{autoFilledFrom || (dimensionSuggestions[0] && dimensionSuggestions[0].part_id)}</span>
                                                             </p>
                                                             {dimensionSuggestions.length > 1 && (
                                                                 <button
@@ -564,7 +574,7 @@ const PartsList = () => {
                                                                 <div
                                                                     key={idx}
                                                                     onClick={() => handleSelectSuggestion(suggestion)}
-                                                                    className={`cursor-pointer p-3 rounded border transition-colors ${suggestion.part_id === autoFilledFrom
+                                                                    className={`cursor-pointer p-3 rounded border transition-colors ${suggestion.part_id === (autoFilledFrom || (dimensionSuggestions[0] && dimensionSuggestions[0].part_id))
                                                                         ? 'bg-blue-100 border-blue-300'
                                                                         : 'bg-white border-gray-200 hover:border-blue-300 hover:bg-blue-50'
                                                                         }`}

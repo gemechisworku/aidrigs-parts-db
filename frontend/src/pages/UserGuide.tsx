@@ -16,6 +16,8 @@ const UserGuide: React.FC = () => {
                             <a href="#translations" className="block text-gray-600 hover:text-red-600">Translations</a>
                             <a href="#quotes-ai" className="block text-gray-600 hover:text-red-600">Quotes & AI Extraction</a>
                             <a href="#reference-data" className="block text-gray-600 hover:text-red-600">Reference Data</a>
+                            <a href="#partners" className="block text-gray-600 hover:text-red-600">Partners & Contacts</a>
+                            <a href="#vehicles" className="block text-gray-600 hover:text-red-600">Vehicles & Compatibility</a>
                             <a href="#approvals" className="block text-gray-600 hover:text-red-600">Approval Workflow</a>
                         </nav>
                     </div>
@@ -237,19 +239,119 @@ const UserGuide: React.FC = () => {
                             </ul>
                         </div>
 
-                        {/* Other Reference Data */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
-                                <h4 className="font-semibold text-gray-900 mb-2">Partners</h4>
-                                <p className="text-sm text-gray-600">Manage customers and suppliers with full contact details and addresses.</p>
+                        {/* HS Codes Deep Dive */}
+                        <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                            <h3 className="text-lg font-bold text-gray-900 mb-3">HS Codes</h3>
+                            <p className="text-gray-600 text-sm mb-4">
+                                Harmonized System codes for customs clearance. Essential for international shipping.
+                            </p>
+                            <ul className="list-disc list-inside text-gray-600 text-sm ml-4 space-y-1">
+                                <li><strong>On-the-fly Creation:</strong> You can create new HS Codes directly from the Translation screen.</li>
+                                <li><strong>Approval Required:</strong> New codes must be approved by an admin.</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    {/* Partners & Contacts */}
+                    <section id="partners">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-4">Partners & Contacts</h2>
+                        <p className="text-gray-600 mb-4">
+                            The <strong>Partners</strong> module is your central directory for all external entities, including suppliers, customers, and logistics providers.
+                        </p>
+
+                        <div className="space-y-6">
+                            {/* Partner Types */}
+                            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                                <h3 className="text-lg font-bold text-gray-900 mb-3">Partner Types</h3>
+                                <ul className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                    <li className="flex items-start">
+                                        <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mr-2 mt-0.5">Supplier</span>
+                                        <span className="text-gray-600">Vendors for part purchasing.</span>
+                                    </li>
+                                    <li className="flex items-start">
+                                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full mr-2 mt-0.5">Customer</span>
+                                        <span className="text-gray-600">Clients for part sales.</span>
+                                    </li>
+                                    <li className="flex items-start">
+                                        <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full mr-2 mt-0.5">AR Storage</span>
+                                        <span className="text-gray-600">Internal storage/warehouse locations.</span>
+                                    </li>
+                                    <li className="flex items-start">
+                                        <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full mr-2 mt-0.5">Forwarder</span>
+                                        <span className="text-gray-600">Logistics and shipping partners.</span>
+                                    </li>
+                                </ul>
                             </div>
-                            <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
-                                <h4 className="font-semibold text-gray-900 mb-2">HS Codes</h4>
-                                <p className="text-sm text-gray-600">Harmonized System codes for customs clearance. Essential for international shipping.</p>
+
+                            {/* Contacts Management */}
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-800 mb-2">Managing Contacts</h3>
+                                <p className="text-gray-600 mb-3">
+                                    The interface uses a split-view layout. Selecting a partner from the list on the left opens their details on the right.
+                                </p>
+                                <ul className="list-disc list-inside text-gray-600 ml-4 space-y-1">
+                                    <li><strong>Location Details:</strong> View street address, city, and country.</li>
+                                    <li><strong>Contacts List:</strong> Add multiple contact persons for each partner.</li>
+                                    <li><strong>Contact Info:</strong> Store Job Title, Email, and two Phone numbers per contact.</li>
+                                </ul>
                             </div>
-                            <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
-                                <h4 className="font-semibold text-gray-900 mb-2">Vehicles</h4>
-                                <p className="text-sm text-gray-600">Manage vehicle makes and models to link parts to specific applications.</p>
+                        </div>
+                    </section>
+
+                    {/* Vehicles & Compatibility */}
+                    <section id="vehicles">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-4">Vehicles & Compatibility</h2>
+                        <p className="text-gray-600 mb-4">
+                            The <strong>Vehicles</strong> module manages the fleet applications. It allows you to define vehicles and link them to parts and other equivalent vehicles.
+                        </p>
+
+                        <div className="space-y-8">
+                            {/* Vehicle Info */}
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-800 mb-2">Vehicle Information</h3>
+                                <p className="text-gray-600 mb-2">
+                                    Vehicles are identified by their <strong>VIN</strong> (17-character standard) and defined by:
+                                </p>
+                                <ul className="list-disc list-inside text-gray-600 ml-4 space-y-1 mb-4">
+                                    <li><strong>Core Info:</strong> Make, Model, Year.</li>
+                                    <li><strong>Specs:</strong> Engine, Trim, Transmission, Drive Type.</li>
+                                </ul>
+                                <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
+                                    <p className="text-sm text-blue-700">
+                                        <strong>Bulk Upload:</strong> You can upload large vehicle fleets using the CSV template. Click "Download Template" in the Vehicles page to get started.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Compatibility Deep Dive */}
+                            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                                <h3 className="text-lg font-bold text-gray-900 mb-3">Feature Deep Dive: Compatibility Logic</h3>
+
+                                <div className="space-y-6">
+                                    <div>
+                                        <h4 className="font-semibold text-gray-800 mb-2">1. Equivalent Vehicles</h4>
+                                        <p className="text-gray-600 mb-2">
+                                            This feature allows you to link vehicles that are technically similar or identical for parts purposes.
+                                        </p>
+                                        <ul className="list-disc list-inside text-gray-600 ml-4 space-y-1 text-sm">
+                                            <li><strong>How to Link:</strong> In the vehicle details, click "+ Add" under Equivalent Vehicles.</li>
+                                            <li><strong>Selection:</strong> Choose another vehicle from the database to link it.</li>
+                                            <li><strong>Tabs:</strong> If a vehicle has multiple equivalents, they appear as tabs for easy navigation.</li>
+                                        </ul>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="font-semibold text-gray-800 mb-2">2. Parts Compatibility</h4>
+                                        <p className="text-gray-600 mb-2">
+                                            Directly link parts to vehicles to build your application catalog.
+                                        </p>
+                                        <ul className="list-disc list-inside text-gray-600 ml-4 space-y-1 text-sm">
+                                            <li><strong>Adding Parts:</strong> Search for a part by ID or Name and add it to the vehicle.</li>
+                                            <li><strong>Notes Field:</strong> Use the notes field for specific fitment details (e.g., "Front only", "Requires heavy duty suspension").</li>
+                                            <li><strong>Verification:</strong> Linked parts appear in the "Compatible Parts" list with their full designation and manufacturer info.</li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </section>
